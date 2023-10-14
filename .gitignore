@@ -1,3 +1,13 @@
+# NexaFeed specific
+opml/
+opml/*
+requirements_installed
+config.yaml
+*.db
+*.pem
+*.backup
+*.log
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,11 +1,11 @@
 import yaml
-from cache_manager import Cache
+from cachetools import TTLCache
 from typing import Any, Dict, List, Optional
 
 class ConfigManager:
     def __init__(self, config_path: str = "config.yaml"):
         self.config_path = config_path
-        self.cache = Cache.get()  # Cache with a Time-To-Live of 300 seconds
+        self.cache = TTLCache(maxsize=100, ttl=900)  # Cache with a Time-To-Live of 300 seconds
         self.config_data: Dict[str, Any] = {}
         self.reload_config()
 
