@@ -1,0 +1,71 @@
+{% for item in feed_items %}
+<div class="col-12 col-md-6 col-lg-4 col-xl-3 d-flex pb-3">
+  <div class="feed-card card mb-3 shadow-sm flex-fill" 
+    x-data='{
+      "open": false,
+      "contentFormatted": false,  // Add this flag
+      "item": {{ item|tojson|safe }},
+      "formattedContent": "",
+      "openModal": function() {
+        this.open = true;
+        this.toggleScroll(false);
+        const lowerBackdrop = document.querySelector(".lower-backdrop");
+        lowerBackdrop.style.display = "block"; // Show the backdrop
+        lowerBackdrop.addEventListener("click", this.closeModal);
+        if (!this.contentFormatted) {  // Check the flag
+          this.formattedContent = formatContent(this.item);
+          this.contentFormatted = true;  // Set the flag to true
+        }
+      },      
+      "closeModal": function() {
+        this.open = false;
+        this.toggleScroll(true);
+        const lowerBackdrop = document.querySelector(".lower-backdrop");
+        lowerBackdrop.style.display = "none"; // Hide the backdrop
+        lowerBackdrop.removeEventListener("click", this.closeModal);
+      },
+      "toggleScroll": function(status) {
+        if (!status) {
+          document.body.classList.add("no-scroll");
+        } else {
+          document.body.classList.remove("no-scroll");
+        }
+      }
+    }' @click.stop="openModal">
+    <!-- Modal Trigger -->
+    <img class="card-img-top thumbnail mr-3" src="{{ item.thumbnail }}" alt="" loading="lazy" @click.stop="openModal">
+    <div class="card-trigger p-3" @click.stop="openModal">
+      <div class="d-flex align-items-center">
+        <div>
+          <h5 class="card-title mb-0">{{ item.title }}</h5>
+          <span class="text-primary font-weight-bold creator-indent">by {{ item.additional_info.creator }}</span>
+        </div>
+      </div>
+      <hr class="card-separator">
+      <div class="card-info mt-2 mb-2">
+        {% for tag in item.additional_info.tags %}
+          <span class="badge bg-primary">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      <p class="card-text" loading="lazy">{{ item.summary }}</p>
+    </div>
+    <footer class="card-footer d-flex align-items-center" @click.stop="openModal">
+      <h5 class="card-title mb-0">View More</h5>
+      <i class="fas fa-chevron-right"></i>
+    </footer>
+    <!-- Modal Content -->
+    <div x-show="open" class="modal-dialog modal-dialog-centered" style="z-index: 2000; position: relative;" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h5 class="modal-title" x-text="item.title"></h5>
+        </div>
+        <hr class="card-separator">
+        <div class="modal-body" x-html="formattedContent" loading="lazy"></div>
+        <footer class="modal-footer d-flex align-items-center justify-content-center" @click="closeModal">
+          <button type="button" class="btn-close wide-close-button"></button>
+        </footer>        
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}

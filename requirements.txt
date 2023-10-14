@@ -1,0 +1,13 @@
+bs4
+quart
+feedparser
+PyYAML
+pyngrok
+cachetools
+python-dateutil
+requests
+user_agent
+lxml
+selenium
+aiohttp
+git+https://github.com/wasi-master/sponsorblock.py.git

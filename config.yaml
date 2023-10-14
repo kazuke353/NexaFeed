@@ -1,0 +1,23 @@
+app:
+  debug: false
+  host: 127.0.0.1
+  port: 5000
+
+#ngrok:
+#  token: ngrok token here
+
+# Database Configuration
+database:
+  db_name: "hermes.db"
+
+# Cache Configuration
+cache:
+  max_size: 1000
+  ttl: 900  # Time-to-live in seconds
+
+# Main Feed
+main_feed_urls:
+- http://googleprojectzero.blogspot.com/feeds/posts/default
+
+adult_feed_urls:
+- http://www.reddit.com/r/privacy/.rss
