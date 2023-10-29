@@ -140,7 +140,7 @@ class RSSFetcher:
     
     def remove_failed_feeds(self, config_manager, category, failed_urls):
         if config_manager and category and failed_urls:
-            print(failed_urls)
             existing_feeds = set(config_manager.config_data.get(category, []))
             updated_feeds = existing_feeds - failed_urls
-            config_manager.update_category_data(category, list(updated_feeds))
+            config_manager.overwrite_category_data(category, list(updated_feeds))
+            print("Removed the following feeds: ", failed_urls)

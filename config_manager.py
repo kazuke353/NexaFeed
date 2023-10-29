@@ -28,6 +28,23 @@ class ConfigManager:
         self.cache[key_path] = value
         return value
 
+    def interpret_boolean(self, value: Any, default: Optional[bool] = None) -> bool:
+        """Interprets various string formats as boolean values, returns default if not a boolean."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            value_lower = value.lower()
+            if value_lower in ["true", "on", "yes"]:
+                return True
+            elif value_lower in ["false", "off", "no"]:
+                return False
+        return default
+
+    def get_boolean(self, key_path: str, default: Optional[bool] = None) -> bool:
+        """Fetches a configuration value and interprets it as a boolean."""
+        value = self.get(key_path)
+        return self.interpret_boolean(value, default)
+
     def get_batch(self, key_paths: List[str]) -> Dict[str, Any]:
         """Fetches multiple configuration values in a batch."""
         results = {}
@@ -82,4 +99,9 @@ class ConfigManager:
         updated_data = existing_data.union(data)
         self.config_data[category] = list(updated_data)
 
+        self.save_config()
+    
+    def overwrite_category_data(self, category, data: list) -> None:
+        """Overwrites the specified category in the configuration with new data."""
+        self.config_data[category] = data
         self.save_config()

@@ -23,6 +23,9 @@ class Feed:
             print("Error: fetch_feeds did not return enough values.")
             feed_items = []
         
+        if rate_limited_urls or overall_status_code == 429:
+            return []
+        
         if search_query:
             search_query_lower = search_query.lower()
             feed_items = [
@@ -34,15 +37,15 @@ class Feed:
                 )
             ]
         
+        if self.config_manager.get_boolean("feed.autoclean", False) and overall_status_code != 429 and start == 0:
+            # Remove failed feeds from the configuration
+            self.rss_fetcher.remove_failed_feeds(self.config_manager, f'{category}_feed_urls', failed_urls)
+        
         feed_items = feed_items[start:end] if feed_items else []
 
         # Save to cache
         self.cache[cache_key] = feed_items
         fetch_duration = time.time() - start_time
-
-        if overall_status_code != 429:
-            # Remove failed feeds from the configuration
-            self.rss_fetcher.remove_failed_feeds(self.config_manager, f'{category}_feed_urls', failed_urls)
 
         print(f"Fetched in {fetch_duration:.2f} seconds")
         

@@ -40,14 +40,20 @@ NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with
 
 ![Screenshot](screenshot.png)
 
-## Features
+## NexaFeed: Streamlined and Powerful Web-based RSS Feed Reader
 
-- **YouTube videos**: Supports watching YouTube videos.
-- **Multiple Categories**: Organize your feeds into various categories for easier navigation.
-- **Cache Management**: Speed up feed loading times with built-in caching.
-- **OPML Import**: Easily import your existing subscriptions.
-- **Responsive Design**: Works seamlessly on various screen sizes.
-- **Cross-Platform**: Being a web-based application, NexaFeed is accessible on any device with a web browser, offering you the ultimate flexibility in how and where you consume your content.
+### Key Features
+
+- **YouTube Integration**: Effortlessly watch YouTube videos directly within NexaFeed.
+- **Categorical Organization**: Streamline your browsing experience with customizable categories, making feed navigation intuitive and efficient.
+- **Advanced Cache Management**: Experience faster feed loading with our sophisticated caching system, ensuring a seamless and quick content retrieval.
+- **Simple OPML Import**: Seamlessly transition to NexaFeed by importing your existing subscriptions. Just drop any .opml file into the designated folder, and you're set!
+- **Responsive Design for Modern Users**: Enjoy a consistent and fluid experience across all devices, thanks to our adaptive design that looks great on any screen size.
+- **High-Efficiency Infinite Scroll**: Powered by Alpine.js, NexaFeed's lightweight infinite scroll feature enhances your browsing without compromising on performance.
+- **Smart Autoclean Functionality**: Keep your feed clean and efficient. Autoclean automatically removes inaccessible or non-responsive feeds, ensuring a streamlined experience.
+- **Truly Cross-Platform**: NexaFeed's web-based nature means you can stay informed and entertained on any device with a web browser. From desktops to smartphones, your content is always within reach, further enhanced by the freedom to use your favorite browser extensions.
+
+Experience the future of feed reading with NexaFeed – Your gateway to organized, efficient, and enjoyable content consumption.
 
 ## Tech Stack 🛠
 
