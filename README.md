@@ -57,78 +57,74 @@ Experience the future of feed reading with NexaFeed – Your gateway to organize
 
 ## Tech Stack 🛠
 
-This project is built with a variety of technologies to make it robust, scalable, and easy to use. Here's a rundown of the tech stack:
+NexaFeed: A Fusion of Cutting-Edge Technologies for Peak Performance and User Experience
 
-- **Backend**
-  - [Python](https://www.python.org/): The programming language used for server-side logic.
-  - [Quart](https://pgjones.gitlab.io/quart/): A Python web microframework based on Asyncio.
-  - Python and Quart. Python for its versatility and Quart for its asyncio capabilities, which make it really fast.
+### Backend: The Power Behind the Performance
+- **[Python](https://www.python.org/)**: The cornerstone of our backend, chosen for its versatility and robustness in server-side logic.
+- **[Quart](https://pgjones.gitlab.io/quart/)**: A Python web microframework, leveraging Asyncio for high-speed asynchronous processing, ensuring rapid response and handling.
 
-- **Frontend**
-  - [Bootstrap](https://getbootstrap.com/): A popular CSS framework for responsive design.
-  - [Alpine.js](https://alpinejs.dev/): A minimal JavaScript framework for composing JavaScript behavior in HTML.
-  - Bootstrap and Alpine.js. Bootstrap to ensure the app is responsive and works well on any device. Alpine.js to manage frontend logic without making things too complicated.
+### Frontend: Responsive and Intuitive Interface
+- **[Bootstrap](https://getbootstrap.com/)**: Our choice for a sleek, responsive design. Bootstrap ensures NexaFeed is visually appealing and functional on any device.
+- **[Alpine.js](https://alpinejs.dev/)**: This minimal JavaScript framework empowers our frontend. With Alpine.js, we seamlessly bind JavaScript behavior to HTML, creating an intuitive user interface without over-complicating the tech stack.
 
-- **Templating**
-  - [Jinja2](https://jinja.palletsprojects.com/): A modern and designer-friendly templating engine for Python.
-  - Jinja2. It's straightforward, powerful, and integrates really well with Python.
+### Templating: Efficient and Designer-Friendly
+- **[Jinja2](https://jinja.palletsprojects.com/)**: A top-tier templating engine that aligns perfectly with Python. Jinja2 is renowned for its simplicity, flexibility, and powerful integration capabilities.
 
-The idea was to create a self-hosted solution that you could customize as per your needs, without any compromises.
-Feel free to explore the project to see how these technologies are used!
+Our mission with NexaFeed was to craft a self-hosted solution that doesn't just meet but exceeds your expectations. Customizable, robust, and user-friendly - NexaFeed is more than an RSS reader; it's a testament to what modern web technologies can achieve.
+
+Dive into the project and explore how these technologies harmonize to deliver an unparalleled content consumption experience.
 
 ## Prerequisites
 
-- Python 3.9 or higher
+Before you begin, ensure you have **Python 3.9 or higher** installed on your system. You can check your Python version using:
+```bash
+python --version
+```
 
-## Installation
+## Easy Installation Guide
 
-1. **Clone the Repository**: Start by cloning the GitHub repository to your local machine.
+Get NexaFeed up and running in no time with these simple steps:
 
+1. **Clone the Repository**: Grab the latest version of NexaFeed from GitHub.
     ```bash
     git clone https://github.com/kazuke353/NexaFeed.git
     ```
-
-2. **Navigate to the Project Directory**: Change your current directory to the NexaFeed directory.
-
+2. **Enter the Nexus**: Dive into your new NexaFeed directory.
     ```bash
     cd NexaFeed
     ```
-
-3. **Configure RSS Feeds**: Open the `config.yaml` file to add or remove the RSS feeds you wish to include. The file includes some default feeds to get you started.
-
+3. **Tailor Your Experience**: Customize your RSS feeds in the `config.yaml` file. Start with our curated defaults or add your favorites.
     ```yaml
     # config.yaml example snippet
-    rss_feeds:
+    main_feed_urls:
       - https://example1.com/rss
       - https://example2.com/rss
     ```
-
-4. **Optional: Add ngrok Token**: If you want to expose your local server to the Internet using ngrok, you can add your ngrok token in the `config.yaml` file.
-
+4. **Enhance with ngrok** *(Optional)*: Want remote access? Add your ngrok token to `config.yaml` for anywhere-access.
     ```yaml
     # config.yaml example snippet
-    ngrok_token: "your-ngrok-token-here"
+    ngrok:
+      token: "your-ngrok-token-here"
     ```
-
-5. **Run the Application**: Use the `run.sh` script to install necessary packages and run the application. This script will take care of installing dependencies and booting up the server.
-
+5. **Launch NexaFeed**: Run `run.sh` to install dependencies and start your journey. This script is your one-click gateway to NexaFeed.
     ```bash
     chmod +x run.sh && ./run.sh
     ```
+> **Pro Tip**: `run.sh` is your hassle-free installer. It handles dependencies and kick-starts NexaFeed for you.
 
-> **Note**: The `run.sh` script automates several tasks like installing dependencies and starting the Python app, making the setup process smoother.
+## How to Use
 
-## Usage
+1. **Enter the Feed World**: Launch a web browser and navigate to `http://127.0.0.1:5000/`. Your personalized NexaFeed dashboard awaits.
+2. **Explore and Enjoy**: Browse your RSS articles, catch up on YouTube, and customize categories through the intuitive UI.
+3. **Go Global with ngrok** *(Optional)*: If you're using ngrok, your NexaFeed can be accessed anywhere via the ngrok URL displayed in your console.
 
-1. **Access NexaFeed**: Open your web browser and navigate to `http://127.0.0.1:5000/` to access the NexaFeed UI.
+## Tailoring NexaFeed
 
-2. **Interact with UI**: Use the User Interface to read your RSS articles, watch YouTube videos, and manage your content categories.
+Dive into `config.yaml` to fine-tune settings to your liking. Adjust cache timings, manage database configurations, curate RSS feeds, and much more. NexaFeed is not just an RSS reader; it's your personal content haven, customizable to the core.
 
-3. **Optional: Access via ngrok**: If you've set up ngrok, you can also access NexaFeed via the ngrok URL, which will be displayed in the console when the app starts.
+---
 
-## Configuration
-
-Configuration settings can be modified in `config.yaml`. Here, you can configure cache duration, database settings, RSS feeds, and more.
+Start your NexaFeed adventure today and redefine how you interact with content online!
 
 ## Caching
 
