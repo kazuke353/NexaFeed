@@ -10,7 +10,7 @@ from cache_manager import Cache
 from media_fetcher import fetch_media
 
 class RSSFetcher:
-    def __init__(self, config_manager=None, max_workers=20):
+    def __init__(self, config_manager=None, max_workers=30):
         self.max_workers = max_workers
         self.session = None
         self.clients = {}
@@ -42,6 +42,40 @@ class RSSFetcher:
     async def fetch_content_from_url(self, url):
         async with self.session.get(url) as response:
             return await response.text()
+    
+    async def process_entry(self, entry, url):
+        published_date = None
+
+        for attr in self.date_attributes:
+            date_str = getattr(entry, attr, '')
+            if date_str:
+                published_date = self.parse_date(date_str)
+                if published_date:
+                    break
+
+        if not published_date:
+            print(f"No valid published date for entry in {url}")
+            return None
+
+        title = getattr(entry, 'title', '')
+        summary = getattr(entry, 'summary', '')
+        summary = BeautifulSoup(summary, 'lxml').text[:100] if summary else ''
+        content = getattr(entry, 'content', [{}])[0].get('value', summary)
+        source = url
+        thumbnail, video_id, additional_info = await fetch_media(entry)  # Assuming fetch_media can be made async
+        original_link = getattr(entry, 'link', '')
+
+        return {
+            'title': title,
+            'content': content,
+            'summary': summary,
+            'source': source,
+            'thumbnail': thumbnail,
+            'video_id': video_id,
+            'additional_info': additional_info,
+            'published_date': published_date,
+            'original_link': original_link
+        }
 
     async def fetch_single_feed(self, url):
         # Check if the result is in cache
@@ -62,39 +96,10 @@ class RSSFetcher:
                 feed = feedparser.parse(text)
                 fetched_feed = []
                 
-                for entry in feed.entries:
-                    published_date = None
+                tasks = [asyncio.create_task(self.process_entry(entry, url)) for entry in feed.entries]
+                entries = await asyncio.gather(*tasks)
+                fetched_feed = [entry for entry in entries if entry is not None]
 
-                    for attr in self.date_attributes:
-                        date_str = getattr(entry, attr, '')
-                        if date_str:
-                            published_date = self.parse_date(date_str)
-                            if published_date:
-                                break
-
-                    if not published_date:
-                        print(f"No valid published date for entry in {url}")
-                        continue
-
-                    title = getattr(entry, 'title', '')
-                    summary = getattr(entry, 'summary', '')
-                    summary = BeautifulSoup(summary, 'lxml').text[:100] if summary else ''
-                    content = getattr(entry, 'content', [{}])[0].get('value', summary)
-                    source = url
-                    thumbnail, video_id, additional_info = fetch_media(entry)
-                    original_link = getattr(entry, 'link', '')
-
-                    fetched_feed.append({
-                        'title': title,
-                        'content': content,
-                        'summary': summary,
-                        'source': source,
-                        'thumbnail': thumbnail,
-                        'video_id': video_id,
-                        'additional_info': additional_info,
-                        'published_date': published_date,
-                        'original_link': original_link
-                    })
                 self.cache[url] = fetched_feed
                 return 200, fetched_feed
         except Exception as e:

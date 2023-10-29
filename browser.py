@@ -44,7 +44,7 @@ class Browser:
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             
             dynamic_content = self.driver.page_source
-            dynamic_soup = BeautifulSoup(dynamic_content, 'html.parser')
+            dynamic_soup = BeautifulSoup(dynamic_content, 'lxml')
             return dynamic_soup
         except WebDriverException as e:
             logger.error(f"Failed to fetch dynamic content: {e}")

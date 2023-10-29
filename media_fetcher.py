@@ -1,7 +1,7 @@
 import re
 from bs4 import BeautifulSoup
 from functools import lru_cache
-import requests
+import aiohttp
 from user_agent import generate_user_agent
 from urllib.parse import urlsplit, urlunsplit
 
@@ -9,7 +9,7 @@ from urllib.parse import urlsplit, urlunsplit
 youtube_regex = re.compile(r'v=([A-Za-z0-9_-]+)')
 
 @lru_cache(maxsize=1000)
-def fetch_media(entry):
+async def fetch_media(entry):
     thumbnail = None
     video = None
     additional_info = {
@@ -18,6 +18,7 @@ def fetch_media(entry):
     }
     url = entry.link
 
+    # Assuming entry.summary is already fetched and is a string
     soup = BeautifulSoup(entry.summary, 'lxml')
     thumbnail_tag = soup.find('img')
     thumbnail = thumbnail_tag['src'] if thumbnail_tag else None
@@ -31,5 +32,7 @@ def fetch_media(entry):
             if match:
                 video = match.group(1)
                 thumbnail = f"https://img.youtube.com/vi/{video}/hqdefault.jpg"
+
+    # Further asynchronous processing can be added here if needed
 
     return thumbnail, video, additional_info
