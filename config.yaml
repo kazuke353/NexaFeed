@@ -1,10 +1,10 @@
 app:
   debug: false
-  host: 127.0.0.1
   port: 5000
 
-#ngrok:
-#  token: ngrok token here
+# Ngrok Configuration
+ngrok:
+  token: "2RTRKLJTqz3LChItOqRNNlyWji9_51gqvm7C2DD33SLzc1i4g"
 
 # Database Configuration
 database:
@@ -13,11 +13,112 @@ database:
 # Cache Configuration
 cache:
   max_size: 1000
-  ttl: 900  # Time-to-live in seconds
+  ttl: 300  # Time-to-live in seconds
 
 # Main Feed
 main_feed_urls:
-- http://googleprojectzero.blogspot.com/feeds/posts/default
-
-adult_feed_urls:
+- http://www.reddit.com/r/anime/.rss
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCNgWKYz-_O0ji11BG9crjLA
+- http://www.reddit.com/r/Qubes/.rss
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCQSpnDG3YsFNf5-qHocF-WQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCfbnTUxUech4P1XgYUwYuKA
+- http://feeds.feedburner.com/HaveIBeenPwnedLatestBreaches
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC0gwIZgjh_VyaANrD-mdIdw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCoil_VoKvJY4kdlBOZv974w
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC7r7KoaJZhRbu_MmRFdeYSg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCjSEJkpGbcZhvo0lr-44X_w
+- https://www.youtube.com/feeds/videos.xml?channel_id=UChIs72whgZI9w6d6FhwGGHA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCPcFg7aBbaVzXoIKSNqwaww
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCzEW-lMU7NxVvAd362oUDEQ
+- http://www.schneier.com/blog/index.rdf
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCs6KfncB4OV6Vug4o_bzijg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCWr0mx597DnSGLFk1WfvSkQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCsHaCORAuXxrMDzC0hr8GPw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCTLUi3oc1-a7dS-2-YgEKmA
+- https://isc.sans.edu/rssfeed_full.xml
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCeP4Yv3s4RvS0-6d9OInRMw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCWFKCr40YwOZQx8FHU_ZqqQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCtMVHI3AJD4Qk4hcbZnI9ZQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCdqp0KK_Io7TwK5cJMBvB0Q
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCHmCNLSWfsA6uoHB-3ClP1w
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC4QZ_LsYcvcq7qOsOhpAX4A
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCrXSVX9a1mj8l0CMLwKgMVw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UClSBolYONOzQjOzE4cMHfpw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCnO2vxNgTvTK03kEj2Z1rEw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCQMjMW-9PhWoH6TWwmnVWvA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCJ0-OtVpF0wOKEqT2Z1HEtA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCTWZz1jXQE8Z7unM6odhg-Q
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC6Mjg5R5QOJYjrio1JmP8Fg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCp3yVOm6A55nx65STpm3tXQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCmKdqsvmV6e7Pwy7N2PMnnA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCBs2Y3i14e1NWQxOGliatmg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCOWcZ6Wicl-1N34H0zZe38w
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCfzlCWGWYyIQ0aLC5w48gBQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCudlnfkmb1LgK4tSgctPNOQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC5U7mHlhP6s6478wd7ZvnhA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC-PUEEayLKp7t1bJ9fC8rXg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCSmH0GU-OPRor0VxHli4K9Q
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCXuqSBlHAE6Xw-yeJA0Tunw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCy3avhfHpBbbgwZpNvuVklg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCR_8NDPrC0cwoAhvxmx1kgg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC5aVBQ1ZwMnM3ddNfGChmkw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCYzPXprvl5Y-Sf0g4vX-m6g
+- https://krebsonsecurity.com/feed/
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCycGV6fAhD_-7GPmCkkESdw
+- http://www.reddit.com/r/netsec/.rss
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCpBUC5sSZZGMbs-TosytIbw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCFbtcTaMFnOAP0pFO1L8hVw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCto7D1L-MiRoOziCXK9uT5Q
 - http://www.reddit.com/r/privacy/.rss
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCg6gPGh8HU2U01vaFCAsvmQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC2V1ul4ul85kac0Y81wXTqQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCUP5UhD6cMfpN4vxW3FYJLQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCSDiMahT5qDCjoWtzruztkw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC9x0AN7BWHpCDHSm9NiJFJQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCO5Jvsc_sKuZi3MhnJxrlzQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCchUOUW-eNmDfDqMS_AiZew
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCf2ocK7dG_WFUgtDtrKR4rw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC7YOGHUfC1Tb6E4pudI9STA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCfcc8OORrouV1lO_qeIZVNQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCV4hkEaZOqu2pQBvXQiZfjA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCE-f0sqi-H7kuLT0YiW9rcA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCKGe7fZ_S788Jaspxg-_5Sg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCUQo7nzH1sXVpzL92VesANw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCRHXUZ0BxbkU2MYZgsuFgkQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC6ZVQBJ00cRkZSnbOZEmCkA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCQeRaTukNYft1_6AZPACnog
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCUXW4gT27TOaDzKFyN-1tXQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCsn6cjffsvyOZCZxvGoJxGg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCBBU7zUOhR_qShfMV26UUCA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC8nZUXCwCTffxthKLtOp6ng
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCq6VFHwMzcMXbuKyG7SQYIg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCFLFc8Lpbwt4jPtY1_Ai5yA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCsXVk37bltHxD1rDPwtNM8Q
+- http://www.linuxsecurity.com/static-content/linuxsecurity_features.rss
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCZx1JN7_QW5JTfOMOjhmS1A
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCSpFnDQr88xCZ80N-X7t0nQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCtEfTJbgvsGjKxU1_QDDPhw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCdBK94H6oZT2Q7l0-b0xmMg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCdoPCztTOW7BJUPk2h5ttXA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCZ2ZIDunorNtNKbRx7H6ysw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCfGmaA-nXPryTfimsnkLieQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCqxhVf_b7GWY9MxAGvMftIg
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCsnEJAjrwfuU7T2yYv00WsA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UC8JrOitrLRmBTYty6kzIFFQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCK3eoeo-HGHH11Pevo1MzfQ
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCphlFqj7Xa9INM3DIvtXUhA
+- https://www.youtube.com/feeds/videos.xml?channel_id=UChQP8CmTWzytpHMv6DvoGcw
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCvjNdLLy5sinqD92Axk8w-g
+- https://www.youtube.com/feeds/videos.xml?channel_id=UCvB0kD6-i5wmZWmj0p3KWCw
+- https://blog.dragonsector.pl/feeds/posts/default?alt=rss
+
+# Fapping feed
+adult_feed_urls:
+- http://www.reddit.com/r/NSFW_HTML5/.rss
+- http://www.reddit.com/r/pornvids/.rss
+- http://www.reddit.com/r/gonewild/.rss
+- http://www.reddit.com/r/NSFW_GIF/.rss
+- http://www.reddit.com/r/NSFW411/.rss
+- http://www.reddit.com/r/TikTokNSFW/.rss
+- http://www.reddit.com/r/TikTokThots/.rss

@@ -10,4 +10,7 @@ user_agent
 lxml
 selenium
 aiohttp
+fuzzywuzzy
+pmaw
+hypercorn
 git+https://github.com/wasi-master/sponsorblock.py.git

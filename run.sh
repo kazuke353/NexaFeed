@@ -87,7 +87,7 @@ fi
 
 # Kill existing processes
 kill_process "app_pid.txt"
-
+killall python3
 
 # Run the application based on the arguments
 if [ "$HEADLESS" = true ]; then

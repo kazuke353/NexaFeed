@@ -7,7 +7,6 @@ class ConfigManager:
         self.config_path = config_path
         self.cache = TTLCache(maxsize=100, ttl=900)  # Cache with a Time-To-Live of 300 seconds
         self.config_data: Dict[str, Any] = {}
-        self.reload_config()
 
     def reload_config(self) -> None:
         """Reloads the configuration from the YAML file."""
@@ -53,3 +52,10 @@ class ConfigManager:
     def get_db_config(self) -> Dict[str, Any]:
         """Fetches the database configuration."""
         return self.get("database", {})
+
+    def save_config(self) -> None:
+        """Saves the entire configuration to the YAML file."""
+        with open(self.config_path, 'w') as file:
+            yaml.safe_dump(self.config_data, file)
+
+        print("Configuration saved!")

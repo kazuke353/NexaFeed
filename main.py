@@ -1,97 +1,102 @@
-from quart import Quart, render_template, redirect, url_for, jsonify
+from quart import Quart, render_template, jsonify, request
+from functools import wraps
 from config_manager import ConfigManager
 from rss_fetcher import RSSFetcher
 from opml_importer import OPMLImporter
 from db_manager import DBManager
 from cache_manager import Cache
 import traceback
+from datetime import timedelta
 from aiohttp import ClientError, ServerTimeoutError
+from ngrok_manager import NgrokManager
 from sponsor_block import SponsorBlockManager
-from pyngrok import ngrok
-import json
-import os
+from reddit_fetcher import fetch_reddit_media
+from fuzzywuzzy import fuzz
+import base64
+import time
+from datetime import datetime, timedelta
+
+recent_requests = {}
 
 app = Quart(__name__)
 config_manager = ConfigManager()
 opml_importer = OPMLImporter(config_manager=config_manager)
-rss_fetcher = RSSFetcher(config_manager=config_manager, max_workers=10)
-sg = SponsorBlockManager()
-DBManager.create_tables()
 
 cache = Cache.get()
 
-# Function to check if ngrok is already running on a specific port
-def is_ngrok_running(port):
-    try:
-        tunnels = ngrok.get_tunnels()
-        for tunnel in tunnels:
-            if f"http://localhost:{port}" == tunnel.local_url or f"https://localhost:{port}" == tunnel.local_url:
-                return True, tunnel.public_url
-        return False, None
-    except Exception as e:
-        if "ERR_NGROK_108" in str(e):
-            print("Cannot start another ngrok instance, account limited to 1 simultaneous session.")
-            if os.path.exists("ngrok_url.json"):
-                with open("ngrok_url.json", "r") as f:
-                    data = json.load(f)
-                    return True, data.get("public_url", None)
-            else:
-                return True, None
-        else:
-            print(f"An error occurred while checking ngrok status: {e}")
-            return False, None
+# Dictionary to store request counts and timestamps
+clients = {}
+
+def rate_limit(client_id, limit, time_window):
+    current_time = datetime.now()
+    request_info = clients.get(client_id, {"count": 0, "time": current_time})
+
+    # Reset count if time_window has passed
+    if current_time - request_info["time"] > timedelta(seconds=time_window):
+        request_info = {"count": 1, "time": current_time}
+    else:
+        request_info["count"] += 1
+
+    clients[client_id] = request_info
+    return request_info["count"] <= limit
+
+def rate_limiter(limit, time_window):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            client_id = request.remote_addr
+            if not rate_limit(client_id, limit, time_window):
+                return jsonify({"error": "rate limit exceeded"}), 429
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 class Feed:
-    def __init__(self, rss_fetcher):
-        self.rss_fetcher = rss_fetcher
+    def __init__(self):
+        self.rss_fetcher = None
         self.db_manager = DBManager
 
-    async def get_feed_items(self, category, start, end):
-        cache_key = f"{category}_{start}_{end}"
+    async def get_feed_items(self, category, start, end, search_query=""):
+        start_time = time.time()
+        cache_key = f"{category}_{start}_{end}_{search_query}"
         if cache_key in cache:
             return cache[cache_key]
+        if not self.rss_fetcher:
+            self.rss_fetcher = RSSFetcher()
         
         urls = config_manager.get(f'{category}_feed_urls')
         try:
-            feed_items = await self.rss_fetcher.fetch_feeds(urls, start, end)
+            feed_items = await self.rss_fetcher.fetch_feeds(urls)
         except ValueError:
             print("Error: fetch_feeds did not return enough values.")
             feed_items = []
         
+        if search_query:
+            search_query_lower = search_query.lower()
+            feed_items = [
+                entry for entry in feed_items if any(
+                    fuzz.partial_ratio(search_query_lower, entry[field].lower()) > 70 if field in entry else False
+                    for field in ['title', 'summary']
+                ) or (
+                    fuzz.partial_ratio(search_query_lower, entry.get('additional_info', {}).get('creator', '').lower()) > 70
+                )
+            ]
+        
+        feed_items = feed_items[start:end] if feed_items else []
+
         # Save to cache
         cache[cache_key] = feed_items
+        fetch_duration = time.time() - start_time
+        print(f"Fetched in {fetch_duration:.2f} seconds")
         
         return feed_items
 
-feed = Feed(rss_fetcher)
+feed = Feed()
 
 @app.route('/')
 async def root():
-    return redirect(url_for('index', category='main'))
-
-@app.route('/refresh', methods=['GET'])
-def refresh_config():
     try:
-        opml_importer.import_opml()
-        global config_manager
-        config_manager = ConfigManager()
-        cache.clear()
-        return {"status": "success", "message": "Configuration and OPML reloaded"}, 200
-    except Exception as e:
-        return {"status": "error", "message": str(e)}, 500
-
-@app.route('/<string:category>/page/<int:page_num>')
-async def paginate(category, page_num):
-    start = (page_num - 1) * 20
-    end = start + 20
-    paginated_feeds = await feed.get_feed_items(category, start, end)
-    return await render_template('feed_items.html', feed_items=paginated_feeds)
-
-@app.route('/<string:category>')
-async def index(category):
-    try:
-        all_feeds = await feed.get_feed_items(category, 0, 20)
-        return await render_template('index.html', feed_items=all_feeds)
+        return await render_template('index.html')
     except ClientError as ce:
         error_message = f"Client error occurred while fetching feeds: {ce}"
         traceback_info = traceback.format_exc()
@@ -108,7 +113,28 @@ async def index(category):
         app.logger.error(f"{error_message}\nTraceback Info:\n{traceback_info}")
         return f"{error_message}\nTraceback Info:\n{traceback_info}", 500
 
-from datetime import timedelta
+@app.route('/refresh', methods=['GET'])
+def refresh_config():
+    try:
+        opml_importer.import_opml()
+        global config_manager
+        config_manager = ConfigManager()
+        cache.clear()
+        return {"status": "success", "message": "Configuration and OPML reloaded"}, 200
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 500
+
+@app.route('/<string:category>/page/<int:page_num>')
+async def paginate(category, page_num):
+    search_query = request.args.get('q')  # Add this line to get the search query
+    start = (page_num - 1) * 20
+    end = start + 20
+    try:
+        paginated_feeds = await feed.get_feed_items(category, start, end, search_query)
+    except ValueError:
+        print("Error: fetch_feeds did not return enough values.")
+        paginated_feeds = []
+    return await render_template('feed_items.html', feed_items=paginated_feeds)
 
 @app.route('/api/sponsorblock/<string:video_id>', methods=['GET'])
 async def sponsored_segments(video_id):
@@ -123,24 +149,35 @@ async def sponsored_segments(video_id):
         segments_dict.append(segment_dict)
     return jsonify({"segments": segments_dict})
 
-if __name__ == "__main__":
-    app_port = config_manager.get("app.port", 5000)
-    token = config_manager.get("ngrok.token", "")
-    if token:
-        # Check if ngrok is already running
-        ngrok_running, public_url = is_ngrok_running(app_port)
+@app.route('/api/reddit/<string:uri>', methods=['GET'])
+async def reddit_media(uri):
+    url = base64.b64decode(uri).decode()
+    print(url, uri)
+    media = fetch_reddit_media(url)
+    return jsonify({"media": media})
 
-        if not ngrok_running:
-            # Initialize ngrok settings
-            ngrok.set_auth_token()
-            ngrok_tunnel = ngrok.connect(app_port)
-            print('Public URL:', ngrok_tunnel.public_url)
-        else:
-            print('ngrok is already running.')
-            print('Public URL:', public_url)
+
+@app.before_serving
+async def startup():
+    app_port = config_manager.get("app.port", 5000)
+    ngrok_token = config_manager.get("ngrok.token", None)
+    public_url = None
+
+    if ngrok_token:
+        ngrok_manager = NgrokManager(ngrok_token, app_port)
+        public_url = ngrok_manager.manage_ngrok()
+
+    if public_url:
+        print(' * Public URL:', public_url)
+
+if __name__ == "__main__":
+    opml = OPMLImporter(config_manager=config_manager)
+    opml.load()
+    config_manager.reload_config()
+    app_port = config_manager.get("app.port", 5000)
 
     app.run(
-        host=config_manager.get("app.host", "127.0.0.1"),
+        host=config_manager.get("app.host", "0.0.0.0"),
         debug=config_manager.get("app.debug", False),
-        port=app_port
+        port=config_manager.get("app.port", 5000)
     )

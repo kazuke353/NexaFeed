@@ -9,20 +9,15 @@
       "openModal": function() {
         this.open = true;
         this.toggleScroll(false);
-        const lowerBackdrop = document.querySelector(".lower-backdrop");
-        lowerBackdrop.style.display = "block"; // Show the backdrop
-        lowerBackdrop.addEventListener("click", this.closeModal);
         if (!this.contentFormatted) {  // Check the flag
           this.formattedContent = formatContent(this.item);
           this.contentFormatted = true;  // Set the flag to true
         }
       },      
       "closeModal": function() {
-        this.open = false;
         this.toggleScroll(true);
-        const lowerBackdrop = document.querySelector(".lower-backdrop");
-        lowerBackdrop.style.display = "none"; // Hide the backdrop
-        lowerBackdrop.removeEventListener("click", this.closeModal);
+        stopVideo();
+        this.open = false;
       },
       "toggleScroll": function(status) {
         if (!status) {
