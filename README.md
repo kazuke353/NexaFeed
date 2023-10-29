@@ -110,7 +110,10 @@ Get NexaFeed up and running in no time with these simple steps:
     ```bash
     chmod +x run.sh && ./run.sh
     ```
-> **Pro Tip**: `run.sh` is your hassle-free installer. It handles dependencies and kick-starts NexaFeed for you.
+> **Pro Tip**: ```bash
+curl -s https://raw.githubusercontent.com/kazuke353/NexaFeed/main/run.sh | bash
+```
+This is your hassle-free installer. It handles dependencies and kick-starts NexaFeed for you.
 
 ## How to Use
 
