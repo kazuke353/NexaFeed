@@ -195,9 +195,6 @@ function initializeYouTubePlayer(videoId, originalLink) {
             "showinfo": 1,
         }
       });
-     })
-     .catch(error => {
-       console.error('Error fetching sponsored segments:', error);
      });
 
   return iframeContainer.outerHTML;

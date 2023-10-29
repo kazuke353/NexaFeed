@@ -1,20 +1,15 @@
-import yaml
+import os
+from ruamel.yaml import YAML
 from cachetools import TTLCache
 from typing import Any, Dict, List, Optional
 
 class ConfigManager:
     def __init__(self, config_path: str = "config.yaml"):
         self.config_path = config_path
-        self.cache = TTLCache(maxsize=100, ttl=900)  # Cache with a Time-To-Live of 300 seconds
-        self.config_data: Dict[str, Any] = {}
-
-    def reload_config(self) -> None:
-        """Reloads the configuration from the YAML file."""
-        with open(self.config_path, 'r') as file:
-            self.config_data = yaml.safe_load(file)
-        
-        self.cache.clear()
-        print("Reload completed!")
+        self.cache = TTLCache(maxsize=1000, ttl=3800)
+        self.yaml = YAML()
+        self.yaml.preserve_quotes = True
+        self.config_data = self.load_config()
 
     def get(self, key_path: str, default: Optional[Any] = None) -> Any:
         """Fetches a single configuration value."""
@@ -53,9 +48,38 @@ class ConfigManager:
         """Fetches the database configuration."""
         return self.get("database", {})
 
+    def reload_config(self) -> None:
+        """Reloads the configuration from the YAML file."""
+        self.cache.clear()
+        self.config_data = self.load_config()
+        print("Reload completed!")
+
+    def load_config(self) -> Dict[str, Any]:
+        """Loads the configuration from the YAML file and returns the loaded data."""
+        if not os.path.exists(self.config_path):
+            print(f"Config file '{self.config_path}' not found. Creating new one.")
+            return {}
+
+        with open(self.config_path, 'r') as file:
+            try:
+                return self.yaml.load(file) or {}
+            except Exception as e:
+                print(f"Error loading config file: {e}")
+                return {}
+
     def save_config(self) -> None:
         """Saves the entire configuration to the YAML file."""
         with open(self.config_path, 'w') as file:
-            yaml.safe_dump(self.config_data, file)
-
+            self.yaml.dump(self.config_data, file)
         print("Configuration saved!")
+
+    def update_category_data(self, category, data: list) -> None:
+        """Updates the specified category in the configuration."""
+        if category not in self.config_data:
+            self.config_data[category] = []
+
+        existing_data = set(self.config_data[category])
+        updated_data = existing_data.union(data)
+        self.config_data[category] = list(updated_data)
+
+        self.save_config()

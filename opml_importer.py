@@ -1,6 +1,4 @@
 import os
-import shutil
-import yaml
 from xml.etree import ElementTree as ET
 from config_manager import ConfigManager
 
@@ -12,10 +10,10 @@ class OPMLImporter:
     def load(self):
         try:
             # Load the entire configuration
-            config_data = self.config_manager.load_config()  # Assuming load_config() fetches the entire config as a dict
+            self.config_manager.config_data = self.config_manager.load_config()
 
             # Extract existing feed URLs or set to empty if not present
-            existing_feed_urls = set(config_data.get("rss_urls", []))
+            category = "main_feed_urls"
             new_feed_urls = set()
 
             for filename in os.listdir(self.folder_path):
@@ -33,10 +31,8 @@ class OPMLImporter:
                     new_filename = filename.replace('.opml', '_processed.opml')
                     os.rename(full_path, os.path.join(self.folder_path, new_filename))
 
-            # Update and save the config
-            updated_feed_urls = list(existing_feed_urls.union(new_feed_urls))
-            self.config_manager.config_data["rss_urls"] = updated_feed_urls
-            self.config_manager.save_config()
+            # Update and save the config using the new method
+            self.config_manager.update_category_data(category, list(new_feed_urls))
 
         except Exception as e:
             print("Failed to import OPML: " + str(e))

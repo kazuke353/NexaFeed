@@ -31,9 +31,6 @@ So, the first thing I wanted was more than what platforms like Feedly could offe
 ### YouTube, Anytime, Anywhere
 Switching platforms to stay updated with YouTube was a hassle. I wanted that integrated right into NexaFeed.
 
-### Clean Slate
-I was tired of the ad clutter. With NexaFeed, you can enjoy a clean, ad-free experience and even use browser extensions like uBlock Origin and SponsorBlock.
-
 ### Any Device, Any Time
 One of the best things about NexaFeed being a web app is that you can use it on any device that has a web browser. Your content will always be within reach.
 
@@ -45,7 +42,7 @@ NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with
 
 ## Features
 
-- **YouTube videos**: Supports watching YouTube videos with integrated SponsorBlock to automatically skip sponsors.
+- **YouTube videos**: Supports watching YouTube videos.
 - **Multiple Categories**: Organize your feeds into various categories for easier navigation.
 - **Cache Management**: Speed up feed loading times with built-in caching.
 - **OPML Import**: Easily import your existing subscriptions.
@@ -143,7 +140,6 @@ Here are some upcoming features and improvements planned for NexaFeed:
 - **RSS Feed Names**: Display the names of the RSS feeds alongside the tags, maintaining a consistent style.
 - **Mark as Read**: Functionality to mark articles as read.
 - **Video Watch Time**: Save the watched time of videos and restore it when revisiting.
-- ~~**Sponsor Block API**: Integrate Sponsor Block API to skip sponsored segments in videos.~~
 
 ## License
 

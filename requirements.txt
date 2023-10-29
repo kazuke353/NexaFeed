@@ -12,5 +12,5 @@ selenium
 aiohttp
 fuzzywuzzy
 pmaw
-hypercorn
-git+https://github.com/wasi-master/sponsorblock.py.git
+ruamel.yaml
+python-Levenshtein
