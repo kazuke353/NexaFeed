@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000" # Map TCP port 5000 in the container to port 5000 on the Docker host.
+    environment:
+      QUART_APP: main:app
+      QUART_ENV: production
+      USE_SSL: "false"
+      HEADLESS: "true"
+    volumes:
+      - .:/usr/src/app

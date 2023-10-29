@@ -74,49 +74,79 @@ Our mission with NexaFeed was to craft a self-hosted solution that doesn't just 
 
 Dive into the project and explore how these technologies harmonize to deliver an unparalleled content consumption experience.
 
+---
+
 ## Prerequisites
 
 Before you begin, ensure you have **Python 3.9 or higher** installed on your system. You can check your Python version using:
-```bash
-python --version
-```
+
+bashCopy code
+
+`python --version`
 
 ## Easy Installation Guide
 
 Get NexaFeed up and running in no time with these simple steps:
 
-1. **Clone the Repository**: Grab the latest version of NexaFeed from GitHub.
-    ```bash
-    git clone https://github.com/kazuke353/NexaFeed.git
-    ```
-2. **Enter the Nexus**: Dive into your new NexaFeed directory.
-    ```bash
-    cd NexaFeed
-    ```
-3. **Tailor Your Experience**: Customize your RSS feeds in the `config.yaml` file. Start with our curated defaults or add your favorites.
-    ```yaml
-    # config.yaml example snippet
-    main_feed_urls:
-      - https://example1.com/rss
-      - https://example2.com/rss
-    ```
-4. **Enhance with ngrok** *(Optional)*: Want remote access? Add your ngrok token to `config.yaml` for anywhere-access.
-    ```yaml
-    # config.yaml example snippet
-    ngrok:
-      token: "your-ngrok-token-here"
-    ```
-5. **Launch NexaFeed**: Run `run.sh` to install dependencies and start your journey. This script is your one-click gateway to NexaFeed.
-    ```bash
-    chmod +x run.sh && ./run.sh
-    ```
+1.  **Clone the Repository**: Grab the latest version of NexaFeed from GitHub.
+
+    bashCopy code
+
+    `git clone https://github.com/kazuke353/NexaFeed.git`
+
+2.  **Enter the Nexus**: Dive into your new NexaFeed directory.
+
+    bashCopy code
+
+    `cd NexaFeed`
+
+3.  **Tailor Your Experience**: Customize your RSS feeds in the `config.yaml` file. Start with our curated defaults or add your favorites.
+
+    yamlCopy code
+
+    `# config.yaml example snippet main_feed_urls:   - https://example1.com/rss   - https://example2.com/rss`
+
+4.  **Enhance with ngrok** _(Optional)_: Want remote access? Add your ngrok token to `config.yaml` for anywhere-access.
+
+    yamlCopy code
+
+    `# config.yaml example snippet ngrok:   token: "your-ngrok-token-here"`
+
+5.  **Launch NexaFeed**: Run `run.sh` to install dependencies and start your journey. This script is your one-click gateway to NexaFeed.
+
+    bashCopy code
+
+    `chmod +x run.sh && ./run.sh`
+
 > **Pro Tip**:
-> 
+>
 > Run the following command in your terminal for a hassle-free installation. This script will handle dependencies and kick-start NexaFeed for you:
-> 
-> ```bash
-> curl -s https://raw.githubusercontent.com/kazuke353/NexaFeed/main/run.sh | bash
-> ```
+>
+> bashCopy code
+>
+> `curl -s https://raw.githubusercontent.com/kazuke353/NexaFeed/main/run.sh | bash`
+
+## Docker Installation
+
+For those who prefer using Docker, follow these steps:
+
+1.  **Build with Docker**: Build your Docker image with:
+
+    bashCopy code
+
+    `docker build -t my-nexafeed-app .`
+
+2.  **Run with Docker**: Start your container using:
+
+    bashCopy code
+
+    `docker run -p 5000:5000 my-nexafeed-app`
+
+    Alternatively, you can use Docker Compose:
+
+    bashCopy code
+
+    `docker-compose up`
 
 ## How to Use
 
