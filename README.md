@@ -62,6 +62,18 @@ NexaFeed: A Fusion of Cutting-Edge Technologies for Peak Performance and User Ex
 ### Backend: The Power Behind the Performance
 - **[Python](https://www.python.org/)**: The cornerstone of our backend, chosen for its versatility and robustness in server-side logic.
 - **[Quart](https://pgjones.gitlab.io/quart/)**: A Python web microframework, leveraging Asyncio for high-speed asynchronous processing, ensuring rapid response and handling.
+- **[feedparser](https://pypi.org/project/feedparser/)**: Used for parsing RSS and Atom feeds, enabling us to gather and process feed data efficiently.
+- **[pyngrok](https://pyngrok.readthedocs.io/)**: Pyngrok allows us to expose local web servers to the internet securely, facilitating testing and development.
+- **[cachetools](https://pypi.org/project/cachetools/)**: Cachetools enhances performance by providing caching solutions for Python functions.
+- **[python-dateutil](https://dateutil.readthedocs.io/)**: Python-dateutil simplifies date and time handling, improving accuracy and readability in our backend.
+- **[requests](https://docs.python-requests.org/)**: Utilized for making HTTP requests, enabling seamless communication with external APIs.
+- **[user_agent](https://pypi.org/project/user-agent/)**: User_agent helps us parse and generate user agent strings, enhancing user tracking and analytics.
+- **[lxml](https://lxml.de/)**: Lxml is employed for efficient XML and HTML parsing, aiding in data extraction and manipulation.
+- **[selenium](https://www.selenium.dev/)**: Selenium automates web browser actions, supporting web scraping and automated testing.
+- **[aiohttp](https://docs.aiohttp.org/)**: Aiohttp is used for asynchronous HTTP requests, improving the efficiency of our backend operations.
+- **[fuzzywuzzy](https://pypi.org/project/fuzzywuzzy/)**: Fuzzywuzzy assists in fuzzy string matching, enhancing text search and comparison.
+- **[ruamel.yaml](https://yaml.readthedocs.io/)**: Ruamel.yaml is employed for YAML parsing and manipulation, ensuring compatibility with configuration files.
+- **[python-Levenshtein](https://pypi.org/project/python-Levenshtein/)**: Python-Levenshtein provides tools for measuring string similarity and edit distances, useful for text processing tasks.
 
 ### Frontend: Responsive and Intuitive Interface
 - **[Bootstrap](https://getbootstrap.com/)**: Our choice for a sleek, responsive design. Bootstrap ensures NexaFeed is visually appealing and functional on any device.
