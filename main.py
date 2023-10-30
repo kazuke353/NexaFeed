@@ -18,7 +18,7 @@ app = Quart(__name__)
 config_manager = ConfigManager()
 opml_importer = OPMLImporter(config_manager=config_manager)
 cache = Cache(config_manager).get()
-feed = Feed(cache, config_manager)
+feed = Feed(config_manager)
 
 # Dictionary to store request counts and timestamps
 clients = {}

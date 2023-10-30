@@ -1,6 +1,5 @@
 import asyncio
 from aiohttp import ClientSession, TCPConnector
-from bs4 import BeautifulSoup
 from collections import deque
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
@@ -10,7 +9,7 @@ from cache_manager import Cache
 from media_fetcher import fetch_media
 
 class RSSFetcher:
-    def __init__(self, config_manager=None, max_workers=30):
+    def __init__(self, config_manager=None, max_workers=20):
         self.max_workers = max_workers
         self.session = None
         self.clients = {}
@@ -43,33 +42,22 @@ class RSSFetcher:
         async with self.session.get(url) as response:
             return await response.text()
     
-    async def process_entry(self, entry, url):
-        published_date = None
-
-        for attr in self.date_attributes:
-            date_str = getattr(entry, attr, '')
-            if date_str:
-                published_date = self.parse_date(date_str)
-                if published_date:
-                    break
-
+    async def process_entry(self, entry):
+        original_link = getattr(entry, 'link', '')
+        published_date = getattr(entry, 'published_date', '')
         if not published_date:
-            print(f"No valid published date for entry in {url}")
+            print(f"No valid published date for entry in {original_link}")
             return None
 
+        tree, summary, thumbnail, video_id, additional_info = fetch_media(entry)
         title = getattr(entry, 'title', '')
-        summary = getattr(entry, 'summary', '')
-        summary = BeautifulSoup(summary, 'lxml').text[:100] if summary else ''
+        summary = tree.text_content()[:100] if tree is not None else summary
         content = getattr(entry, 'content', [{}])[0].get('value', summary)
-        source = url
-        thumbnail, video_id, additional_info = await fetch_media(entry)  # Assuming fetch_media can be made async
-        original_link = getattr(entry, 'link', '')
 
         return {
             'title': title,
             'content': content,
             'summary': summary,
-            'source': source,
             'thumbnail': thumbnail,
             'video_id': video_id,
             'additional_info': additional_info,
@@ -77,13 +65,19 @@ class RSSFetcher:
             'original_link': original_link
         }
 
+    async def process_entries_range(self, cached_feed, start, end):
+        entries_to_process = cached_feed[start:end]
+        tasks = [asyncio.create_task(self.process_entry(entry)) for entry in entries_to_process]
+        processed_entries = await asyncio.gather(*tasks)
+        return [entry for entry in processed_entries if entry is not None]
+
     async def fetch_single_feed(self, url):
         # Check if the result is in cache
         cached_feed = self.cache.get(url)
         if cached_feed is not None:
             return 200, cached_feed
 
-        if not self.rate_limit(url, 1, 60):
+        if self.rate_limit(url, 1, 60):
             return 429, []
 
         if not self.session:
@@ -94,14 +88,8 @@ class RSSFetcher:
             async with self.session.get(url) as response:
                 text = await response.text()
                 feed = feedparser.parse(text)
-                fetched_feed = []
-                
-                tasks = [asyncio.create_task(self.process_entry(entry, url)) for entry in feed.entries]
-                entries = await asyncio.gather(*tasks)
-                fetched_feed = [entry for entry in entries if entry is not None]
-
-                self.cache[url] = fetched_feed
-                return 200, fetched_feed
+                self.cache[url] = feed.entries  # Cache raw entries
+                return 200, feed.entries
         except Exception as e:
             print(f"An error occurred while fetching {url}: {e}")
             return 443, []
@@ -137,9 +125,19 @@ class RSSFetcher:
 
         await asyncio.gather(*tasks)
 
-        # Flatten and sort the list of feeds by their published date
-        all_feeds = [entry for sublist in fetched_feeds for entry in sublist]
-        all_feeds.sort(key=lambda x: x.get('published_date'), reverse=True)
+        # Flatten the list of feeds and process dates simultaneously
+        all_feeds = []
+        for sublist in fetched_feeds:
+            for entry in sublist:
+                # Parse the date and store it in entry.published_date
+                entry.published_date = next(
+                    (self.parse_date(getattr(entry, attr, '')) for attr in self.date_attributes if getattr(entry, attr, '')),
+                    datetime.min.replace(tzinfo=timezone.utc)
+                )
+                all_feeds.append(entry)
+
+        # Now sort based on the stored dates
+        all_feeds.sort(key=lambda entry: entry.published_date, reverse=True)
 
         return overall_status_code, all_feeds, successful_urls, failed_urls, rate_limited_urls
     

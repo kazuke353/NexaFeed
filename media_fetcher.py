@@ -1,15 +1,18 @@
 import re
-from bs4 import BeautifulSoup
+from lxml import html
 from functools import lru_cache
-import aiohttp
-from user_agent import generate_user_agent
-from urllib.parse import urlsplit, urlunsplit
 
 # Pre-compile regular expressions
 youtube_regex = re.compile(r'v=([A-Za-z0-9_-]+)')
 
+def find_first_img_src(tree):
+    for element in tree.iter():
+        if element.tag == 'img':
+            return element.get('src')
+    return None
+
 @lru_cache(maxsize=1000)
-async def fetch_media(entry):
+def fetch_media(entry):
     thumbnail = None
     video = None
     additional_info = {
@@ -18,13 +21,12 @@ async def fetch_media(entry):
     }
     url = entry.link
 
-    # Assuming entry.summary is already fetched and is a string
-    soup = BeautifulSoup(entry.summary, 'lxml')
-    thumbnail_tag = soup.find('img')
-    thumbnail = thumbnail_tag['src'] if thumbnail_tag else None
+    summary = getattr(entry, 'summary', '')
+    tree = html.fromstring(summary) if summary else None
+    thumbnail = find_first_img_src(tree) if tree else None
 
     if "reddit.com" in url:
-        video = "XD"
+        video = "reddit"
 
     if not thumbnail:
         if "youtube.com" in url:
@@ -33,6 +35,4 @@ async def fetch_media(entry):
                 video = match.group(1)
                 thumbnail = f"https://img.youtube.com/vi/{video}/hqdefault.jpg"
 
-    # Further asynchronous processing can be added here if needed
-
-    return thumbnail, video, additional_info
+    return tree, summary, thumbnail, video, additional_info
