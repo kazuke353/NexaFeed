@@ -150,7 +150,7 @@ For those who prefer using Docker, follow these steps:
 1.  **Build with Docker**: Build your Docker image with:
 
     ```bash
-    docker build -t my-nexafeed-app
+    docker build -t my-nexafeed-app .
     ```
 
 2.  **Run with Docker**: Start your container using:
