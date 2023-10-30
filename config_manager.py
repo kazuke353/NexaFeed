@@ -61,10 +61,6 @@ class ConfigManager:
         """Fetches the cache configuration."""
         return self.get("cache", {})
 
-    def get_db_config(self) -> Dict[str, Any]:
-        """Fetches the database configuration."""
-        return self.get("database", {})
-
     def reload_config(self) -> None:
         """Reloads the configuration from the YAML file."""
         self.cache.clear()

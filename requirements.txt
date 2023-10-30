@@ -6,7 +6,6 @@ python-dateutil
 requests
 user_agent
 lxml
-selenium
 aiohttp
 fuzzywuzzy
 ruamel.yaml

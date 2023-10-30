@@ -69,7 +69,6 @@ NexaFeed: A Fusion of Cutting-Edge Technologies for Peak Performance and User Ex
 - **[requests](https://docs.python-requests.org/)**: Utilized for making HTTP requests, enabling seamless communication with external APIs.
 - **[user_agent](https://pypi.org/project/user-agent/)**: User_agent helps us parse and generate user agent strings, enhancing user tracking and analytics.
 - **[lxml](https://lxml.de/)**: Lxml is employed for efficient XML and HTML parsing, aiding in data extraction and manipulation.
-- **[selenium](https://www.selenium.dev/)**: Selenium automates web browser actions, supporting web scraping and automated testing.
 - **[aiohttp](https://docs.aiohttp.org/)**: Aiohttp is used for asynchronous HTTP requests, improving the efficiency of our backend operations.
 - **[fuzzywuzzy](https://pypi.org/project/fuzzywuzzy/)**: Fuzzywuzzy assists in fuzzy string matching, enhancing text search and comparison.
 - **[ruamel.yaml](https://yaml.readthedocs.io/)**: Ruamel.yaml is employed for YAML parsing and manipulation, ensuring compatibility with configuration files.
