@@ -1,7 +1,5 @@
-bs4
 quart
 feedparser
-PyYAML
 pyngrok
 cachetools
 python-dateutil
@@ -11,6 +9,5 @@ lxml
 selenium
 aiohttp
 fuzzywuzzy
-pmaw
 ruamel.yaml
 python-Levenshtein
