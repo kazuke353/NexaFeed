@@ -137,7 +137,7 @@ Get NexaFeed up and running in no time with these simple steps:
 
 > **Pro Tip**:
 >
-> Run the following command in your terminal for a hassle-free installation. This script will handle dependencies and kick-start NexaFeed for you:
+> Run the following command in your terminal for a hassle-free installation. This script will clone the repository, copy over opml files and config.yaml file if they exist, install needed Linux packages, handle python dependencies and kick-start NexaFeed for you:
 >
 > ```bash
 > curl -s https://raw.githubusercontent.com/kazuke353/NexaFeed/main/run.sh | bash
