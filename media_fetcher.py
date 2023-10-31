@@ -22,8 +22,8 @@ def fetch_media(entry):
     url = entry.link
 
     summary = getattr(entry, 'summary', '')
-    tree = html.fromstring(summary) if summary else None
-    thumbnail = find_first_img_src(tree) if tree else None
+    tree = html.fromstring(summary) if len(summary) > 0 else None
+    thumbnail = find_first_img_src(tree) if len(tree) > 0 else None
 
     if "reddit.com" in url:
         video = "reddit"
