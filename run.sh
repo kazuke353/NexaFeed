@@ -7,8 +7,6 @@ if [ ! -d ".git" ]; then
     # If not empty, clone the repo into a new directory and cd into it
     git clone https://github.com/kazuke353/NexaFeed.git NexaFeed
     cd NexaFeed
-    # Remove the original run.sh from the parent directory
-    rm ../run.sh
 fi
 
 # Parse command line arguments
@@ -137,12 +135,17 @@ else
   source venv/bin/activate
 fi
 
+# Check if wheel package is installed, if not, install it
+if ! pip show wheel > /dev/null; then
+    pip install wheel
+fi
+
 # Check if FORCE_INSTALL is set or if requirements.txt was modified after last install
 if [ "$FORCE_INSTALL" = true ] || [ -z "$LAST_INSTALLED" ] || [ "$REQUIREMENTS_MODIFIED" -gt "$LAST_INSTALLED" ]; then
   if [ "$FORCE_INSTALL" = true ]; then
-    pip install -r requirements.txt --force-reinstall
+    pip install -r requirements.txt --use-pep517 --force-reinstall
   else
-    pip install -r requirements.txt
+    pip install -r requirements.txt --use-pep517
   fi
   echo $(date +%s) > .last_installed
 fi
