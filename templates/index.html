@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
-  <title>Hermes Feed</title>
+  <title>NexaFeed</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -19,47 +19,45 @@
               <span class="navbar-toggler-icon"></span>
           </button>
           <div :class="{'show': open}" class="collapse navbar-collapse" id="navbarNav">
-  
-              <!-- Category Div: Left -->
-              <div class="d-flex align-items-center">
-                  <ul class="navbar-nav">
-                      <li class="nav-item">
-                          <a href="#" id="main" class="nav-link" data-category="main">Main</a>
-                      </li>
-                      <li class="nav-item">
-                          <a href="#" id="adult" class="nav-link" data-category="adult">Adult</a>
-                      </li>
-                  </ul>
-              </div>
-  
-              <!-- Search: Center -->
-              <div class="d-flex align-items-center mx-auto">
-                  <input type="text" id="search-box" placeholder="Search..." class="form-control" style="width: 60vw; max-width: 800px;">
-                  <button id="search-button" class="btn btn-outline-light ml-2" x-on:click="search">
-                      <i class="fas fa-search"></i>
-                  </button>
-              </div>
-  
-              <!-- Right Items: Right -->
-              <div class="d-flex align-items-center">
-                <a href="https://aniwave.to/user/watch-list?folder=1&keyword=&sort=recently_updated" target="_blank" class="btn btn-outline-light ml-2">
-                  <img src="https://s2.bunnycdn.ru/assets/sites/aniwave/favicon1.png" alt="Aniwave" style="width: 20px; height: 20px;">
-                </a>
-                <a href="https://myanimelist.net/anime/season" target="_blank" class="btn btn-outline-light ml-2">
-                  <img src="https://cdn.myanimelist.net/images/favicon.ico" alt="MyAnimeList" style="width: 20px; height: 20px;">
-                </a>
-                <a href="https://discord.com/app" target="_blank" class="btn btn-outline-light ml-2">
-                  <img src="https://discord.com/assets/images/favicon.ico" alt="Discord" style="width: 20px; height: 20px;">
-                </a>
-                <a href="https://chat.openai.com/" target="_blank" class="btn btn-outline-light ml-2">
-                  <img src="https://cdn.oaistatic.com/_next/static/media/favicon-32x32.be48395e.png" alt="ChatGPT" style="width: 20px; height: 20px;">
-                </a>
+            <!-- Category Div: Left -->
+            <div class="d-flex align-items-center">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a href="#" id="main" class="nav-link" data-category="main">Main</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" id="adult" class="nav-link" data-category="adult">Adult</a>
+                    </li>
+                </ul>
+            </div>
 
-                <button id="refresh-button" class="btn btn-outline-light ml-2">
-                    <i class="fas fa-sync-alt"></i>
+            <!-- Search: Center -->
+            <div class="d-flex align-items-center mx-auto">
+                <input type="text" id="search-box" placeholder="Search..." class="form-control" style="width: 60vw; max-width: 800px;">
+                <button id="search-button" class="btn btn-outline-light ml-2" x-on:click="search">
+                    <i class="fas fa-search"></i>
                 </button>
-              </div>
-              
+            </div>
+
+            <!-- Right Items: Right -->
+            <div class="d-flex align-items-center">
+              <a href="https://aniwave.to/user/watch-list?folder=1&keyword=&sort=recently_updated" target="_blank" class="btn btn-outline-light ml-2">
+                <img src="https://s2.bunnycdn.ru/assets/sites/aniwave/favicon1.png" alt="Aniwave" style="width: 20px; height: 20px;">
+              </a>
+              <a href="https://myanimelist.net/anime/season" target="_blank" class="btn btn-outline-light ml-2">
+                <img src="https://cdn.myanimelist.net/images/favicon.ico" alt="MyAnimeList" style="width: 20px; height: 20px;">
+              </a>
+              <a href="https://discord.com/app" target="_blank" class="btn btn-outline-light ml-2">
+                <img src="https://discord.com/assets/images/favicon.ico" alt="Discord" style="width: 20px; height: 20px;">
+              </a>
+              <a href="https://chat.openai.com/" target="_blank" class="btn btn-outline-light ml-2">
+                <img src="https://cdn.oaistatic.com/_next/static/media/favicon-32x32.be48395e.png" alt="ChatGPT" style="width: 20px; height: 20px;">
+              </a>
+
+              <button id="refresh-button" class="btn btn-outline-light ml-2">
+                  <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
           </div>
       </div>
       <style>
@@ -83,11 +81,5 @@
     <div x-show="loading" class="spinner-border text-primary" role="status"></div>
     <span class="visually-hidden loader">Loading...</span>
   </div>
-  <footer class="bg-dark text-center text-lg-start">
-    <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
-      <p>Copyright © 2023 Hermes Feed. All rights reserved.</p>
-      <p>Contact: info@hermesfeed.com</p>
-    </div>
-  </footer>
 </body>
 </html>
