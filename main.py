@@ -4,6 +4,7 @@ from config_manager import ConfigManager
 from feed_manager import Feed
 from opml_importer import OPMLImporter
 from cache_manager import Cache
+import os
 import traceback
 from datetime import timedelta
 from aiohttp import ClientError, ServerTimeoutError
@@ -11,6 +12,8 @@ from ngrok_manager import NgrokManager
 from reddit_fetcher import fetch_reddit_media
 import base64
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+load_dotenv()
 
 recent_requests = {}
 
@@ -105,7 +108,7 @@ async def sponsored_segments(video_id):
 @app.before_serving
 async def startup():
     app_port = config_manager.get("app.port", 5000)
-    ngrok_token = config_manager.get("ngrok.token", None)
+    ngrok_token = db_user = os.environ.get('NGROK_TOKEN')
     public_url = None
 
     if ngrok_token:
