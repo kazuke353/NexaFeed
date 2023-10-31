@@ -7,6 +7,11 @@ FORCE_INSTALL=false
 USE_SSL=false
 HEADLESS=false
 
+# Get the modification time of requirements.txt
+REQUIREMENTS_MODIFIED=$(stat -c %Y requirements.txt 2>/dev/null)
+# Get the last installed time from a marker file
+LAST_INSTALLED=$(cat .last_installed 2>/dev/null)
+
 while [ "$1" != "" ]; do
     case $1 in
         -f | --force )    FORCE_INSTALL=true
@@ -123,12 +128,14 @@ else
   source venv/bin/activate
 fi
 
-# Force install requirements if flag is set
-if [ "$FORCE_INSTALL" = true ]; then
-  pip install -r requirements.txt --force-reinstall
-elif [ ! -f "requirements_installed" ]; then
-  pip install -r requirements.txt
-  touch requirements_installed
+# Check if FORCE_INSTALL is set or if requirements.txt was modified after last install
+if [ "$FORCE_INSTALL" = true ] || [ -z "$LAST_INSTALLED" ] || [ "$REQUIREMENTS_MODIFIED" -gt "$LAST_INSTALLED" ]; then
+  if [ "$FORCE_INSTALL" = true ]; then
+    pip install -r requirements.txt --force-reinstall
+  else
+    pip install -r requirements.txt
+  fi
+  echo $(date +%s) > .last_installed
 fi
 
 # Check for SSL certificates and create if not exists

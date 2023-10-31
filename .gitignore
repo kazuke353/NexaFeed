@@ -1,6 +1,6 @@
 # NexaFeed specific
 opml/
-requirements_installed
+.last_installed
 *.pem
 *.backup
 *.log
