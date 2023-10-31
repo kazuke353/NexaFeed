@@ -2,6 +2,21 @@
 # Change the directory to the script's location
 cd "$(dirname "$0")"
 
+# Check if the repo is already cloned
+if [ ! -d ".git" ]; then
+    # Check if the current directory is empty
+    if [ -z "$(ls -A .)" ]; then
+        # If empty, clone the repository into the current directory
+        git clone https://github.com/kazuke353/NexaFeed.git .
+    else
+        # If not empty, clone the repo into a new directory and cd into it
+        git clone https://github.com/kazuke353/NexaFeed.git NexaFeed
+        cd NexaFeed
+        # Remove the original run.sh from the parent directory
+        rm ../run.sh
+    fi
+fi
+
 # Parse command line arguments
 FORCE_INSTALL=false
 USE_SSL=false
