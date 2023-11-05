@@ -1,13 +1,34 @@
+# Web framework
 quart
-feedparser
-pyngrok
-cachetools
-python-dateutil
+aiohttp
+
+# URL and HTTP related
+tldextract
 requests
 user_agent
+pyngrok
 lxml
-aiohttp
-fuzzywuzzy
+
+# Database drivers and ORMs
+aiomysql
+asyncpg
+psycopg2-binary
+sqlalchemy
+
+# Date and time management
+pytz
+python-dateutil
+
+# Parsing tools
+feedparser
 ruamel.yaml
-python-dotenv
+
+# Caching tools
+cachetools
+
+# String manipulation and comparison
+fuzzywuzzy
 python-Levenshtein
+
+# Configuration and environment management
+python-dotenv

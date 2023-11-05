@@ -1,6 +1,7 @@
 from quart import Quart, render_template, jsonify, request
 from functools import wraps
 from config_manager import ConfigManager
+from db_manager import DBManager
 from feed_manager import Feed
 from opml_importer import OPMLImporter
 from cache_manager import Cache
@@ -18,10 +19,11 @@ load_dotenv()
 recent_requests = {}
 
 app = Quart(__name__)
+db_manager = DBManager()
 config_manager = ConfigManager()
 opml_importer = OPMLImporter(config_manager=config_manager)
 cache = Cache(config_manager).get()
-feed = Feed(config_manager)
+feed = Feed(db_manager, config_manager)
 
 # Dictionary to store request counts and timestamps
 clients = {}
@@ -87,10 +89,9 @@ def refresh_config():
 @app.route('/<string:category>/page/<int:page_num>')
 async def paginate(category, page_num):
     search_query = request.args.get('q')
-    size = config_manager.get("feed.size", 20)
-    start = (page_num - 1) * size
-    end = start + size
-    paginated_feeds = await feed.get_feed_items(category, start, end, search_query)
+    limit = config_manager.get("feed.size", 20)
+    offset = (page_num - 1) * limit
+    paginated_feeds = await feed.get_feed_items(category, limit, offset, search_query)
     return await render_template('feed_items.html', feed_items=paginated_feeds)
 
 @app.route('/api/reddit/<string:uri>', methods=['GET'])
@@ -108,7 +109,7 @@ async def sponsored_segments(video_id):
 @app.before_serving
 async def startup():
     app_port = config_manager.get("app.port", 5000)
-    ngrok_token = db_user = os.environ.get('NGROK_TOKEN')
+    ngrok_token = os.environ.get('NGROK_TOKEN')
     public_url = None
 
     if ngrok_token:
@@ -117,6 +118,8 @@ async def startup():
 
     if public_url:
         print(' * Public URL:', public_url)
+    
+    ngrok_token = None
 
 if __name__ == "__main__":
     opml_importer.load()

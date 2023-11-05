@@ -85,6 +85,8 @@ const feedManager_func = {
     }
   },
 
+  changeTheme: window.changeTheme,
+
   goBack() {
     this.searchQuery = '';
     document.getElementById('search-box').value = this.searchQuery;
@@ -276,3 +278,108 @@ function stopVideo() {
     iframe.src = iframeSrc;  // This will effectively reload the iframe, stopping the video
   }
 }
+
+window.changeTheme = function(theme) {
+    const root = document.documentElement;
+    localStorage.setItem('selectedTheme', theme);
+  
+    // Define a helper function to clear existing styles
+    function clearThemeStyles() {
+      root.style.removeProperty('--primary-color');
+      root.style.removeProperty('--secondary-color');
+      root.style.removeProperty('--background-color');
+      root.style.removeProperty('--text-color');
+      root.style.removeProperty('--secondary-bg-color');
+      root.style.removeProperty('--title-color');
+      root.style.removeProperty('--accent-color');
+      root.style.removeProperty('--highlight-color');
+      root.style.removeProperty('--link-color');
+    }
+  
+    switch (theme) {
+      case 'light':
+        clearThemeStyles(); // Clear any existing theme styles
+        root.style.setProperty('--primary-color', '#0066ff');
+        root.style.setProperty('--secondary-color', '#ffcc00');
+        root.style.setProperty('--background-color', '#f3f3f3');
+        root.style.setProperty('--text-color', '#333333');
+        root.style.setProperty('--secondary-bg-color', '#dddddd');
+        root.style.setProperty('--title-color', '#000000');
+        root.style.setProperty('--border-color-1', '#cccccc'); // Light grey for borders
+        root.style.setProperty('--border-color-2', '#e6e6e6'); // Even lighter grey for secondary borders
+        break;
+      case 'dark':
+        clearThemeStyles();
+        root.style.setProperty('--primary-color', '#ffffff');
+        root.style.setProperty('--secondary-color', '#5e5e5e');
+        root.style.setProperty('--background-color', '#333333');
+        root.style.setProperty('--text-color', '#f3f3f3');
+        root.style.setProperty('--secondary-bg-color', '#242424');
+        root.style.setProperty('--title-color', '#ffffff');
+        root.style.setProperty('--border-color-1', '#4c4c4c'); // Dark grey for borders
+        root.style.setProperty('--border-color-2', '#666666'); // Medium grey for secondary borders
+        break;
+      case 'latte':
+        clearThemeStyles();
+        root.style.setProperty('--primary-color', '#E5C07B'); // Soft Brown
+        root.style.setProperty('--secondary-color', '#7E9CD8'); // Soft Blue
+        root.style.setProperty('--background-color', '#FDF0ED'); // Cream White
+        root.style.setProperty('--text-color', '#4C4F69'); // Deep Lavender
+        root.style.setProperty('--secondary-bg-color', '#F0EDE3'); // Light Cream
+        root.style.setProperty('--title-color', '#4C4F69'); // Deep Lavender
+        root.style.setProperty('--border-color-1', '#DDBB99'); // A light brown for borders
+        root.style.setProperty('--border-color-2', '#CDAF91'); // A darker shade of light brown for secondary borders
+        break;
+      case 'frappe':
+        clearThemeStyles();
+        root.style.setProperty('--primary-color', '#A6E3A1'); // Soft Green
+        root.style.setProperty('--secondary-color', '#F28FAD'); // Soft Pink
+        root.style.setProperty('--background-color', '#303446'); // Dark Slate
+        root.style.setProperty('--text-color', '#F2D5CF'); // Light Rose
+        root.style.setProperty('--secondary-bg-color', '#3C415E'); // Dark Lavender
+        root.style.setProperty('--title-color', '#F2D5CF'); // Light Rose
+        root.style.setProperty('--border-color-1', '#B4A5A5'); // A muted pink for borders
+        root.style.setProperty('--border-color-2', '#9E9494'); // A darker shade for secondary borders
+        break;
+      case 'macchiato':
+        clearThemeStyles();
+        root.style.setProperty('--primary-color', '#EB6F92'); // Soft Red
+        root.style.setProperty('--secondary-color', '#F9C2A2'); // Soft Orange
+        root.style.setProperty('--background-color', '#24273A'); // Deep Blue
+        root.style.setProperty('--text-color', '#CAD3F5'); // Light Periwinkle
+        root.style.setProperty('--secondary-bg-color', '#2D2F41'); // Dark Periwinkle
+        root.style.setProperty('--title-color', '#CAD3F5'); // Light Periwinkle
+        root.style.setProperty('--border-color-1', '#F3C1D3'); // A light red/pink for borders
+        root.style.setProperty('--border-color-2', '#F7DAD1'); // A lighter shade for secondary borders
+        break;
+      case 'mocha':
+        clearThemeStyles();
+        root.style.setProperty('--primary-color', '#AB9DF2'); // Soft Purple
+        root.style.setProperty('--secondary-color', '#F8BD96'); // Soft Peach
+        root.style.setProperty('--background-color', '#1E1E2E'); // Very Dark Blue
+        root.style.setProperty('--text-color', '#CDD6F4'); // Light Lavender
+        root.style.setProperty('--secondary-bg-color', '#282A3A'); // Dark Lavender
+        root.style.setProperty('--title-color', '#CDD6F4'); // Light Lavender
+        root.style.setProperty('--border-color-1', '#9D8DD0'); // A light purple for borders
+        root.style.setProperty('--border-color-2', '#EFBBA6'); // A light peach for secondary borders
+        break;
+      default:
+        clearThemeStyles();
+        // Fallback to light theme
+        root.style.setProperty('--primary-color', '#0066ff');
+        root.style.setProperty('--secondary-color', '#ffcc00');
+        root.style.setProperty('--background-color', '#f3f3f3');
+        root.style.setProperty('--text-color', '#333333');
+        root.style.setProperty('--secondary-bg-color', '#dddddd');
+        root.style.setProperty('--title-color', '#000000');
+        root.style.setProperty('--border-color-1', '#cccccc'); // Light grey for borders
+        root.style.setProperty('--border-color-2', '#e6e6e6'); // Even lighter grey for secondary borders
+    }
+  }
+  
+  window.onload = function() {
+      const savedTheme = localStorage.getItem('selectedTheme');
+      if (savedTheme) {
+          changeTheme(savedTheme); // Apply the saved theme
+      }
+  }

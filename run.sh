@@ -35,14 +35,41 @@ while [ "$1" != "" ]; do
     shift
 done
 
+env_variable_exists() {
+  local var_name="$1"
+  local env_file=".env"
+  if grep -q "^$var_name=" "$env_file" 2>/dev/null; then
+    return 0  # Return success if the variable exists
+  else
+    return 1  # Return failure if the variable does not exist
+  fi
+}
+
 set_env_variable() {
   local var_name="$1"
   local prompt_message="$2"
   local already_set_message="${3-}"  # Default to unset if not provided.
+  local default_value="${4-}"  # New argument for the default value.
   local env_file=".env"
 
-  if ! grep -q "^$var_name=" "$env_file" 2>/dev/null; then
-    read -p "$prompt_message" var_value
+  if ! env_variable_exists "$var_name"; then
+    # If prompt_message is empty, set the variable silently using the default value.
+    if [ -z "$prompt_message" ]; then
+      var_value="$default_value"
+    else
+      # Include the default value in the prompt message.
+      if [ -n "$default_value" ]; then
+        prompt_message="${prompt_message} (default: $default_value): "
+      else
+        prompt_message="${prompt_message}: "
+      fi
+
+      read -p "$prompt_message" var_value
+
+      # Use the default value if the input is empty.
+      var_value="${var_value:-$default_value}"
+    fi
+
     echo
     echo "$var_name=$var_value" >> "$env_file"
     chmod 600 "$env_file"
@@ -55,76 +82,132 @@ set_env_variable() {
   fi
 }
 
-# Function to check if a command exists
-command_exists () {
-  type "$1" &> /dev/null ;
-}
-
-# Function to check if a process with a given name is running
-is_process_running() {
-  pgrep -x "$1" > /dev/null
-}
-
-# Function to kill a process by name
-kill_process_by_name() {
-  if is_process_running "$1"; then
-    killall "$1"
-  fi
-}
-
 # Function to kill process by PID
 kill_process_by_pid_file() {
   if [ -f "$1" ]; then
-    kill -9 $(cat "$1")
+    kill $(cat "$1")
     rm -f "$1"
   fi
 }
 
+# Function to check if a command exists
+command_exists () {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Function to install necessary packages based on the distro
+install_python () {
+  # If Python3 or pip3 doesn't exist, install necessary packages
+  if ! command_exists python3 || ! command_exists pip3; then
+    if [ -f "/etc/os-release" ]; then
+      . /etc/os-release
+      case $ID in
+        ubuntu|debian|pop)
+          sudo apt update
+          sudo apt install -y python3 python3-pip python3-venv postgresql postgresql-contrib
+          ;;
+        fedora)
+          sudo dnf update -y
+          sudo dnf install -y python3 python3-pip python3-virtualenv postgresql postgresql-server
+          ;;
+        centos)
+          sudo yum install -y python3 python3-pip python3-virtualenv postgresql-server postgresql-contrib
+          ;;
+        arch)
+          sudo pacman -Syu python python-pip python-virtualenv postgresql
+          ;;
+        *)
+          echo "Distro not recognized. Please install python3, python3-pip and python3-venv manually."
+          exit 1
+          ;;
+      esac
+    else
+      echo "Distro not recognized. Please install python3, python3-pip and python3-venv manually."
+      exit 1
+    fi
+  fi
+}
+
+install_postgresql () {
+  if ! command_exists psql; then
+    if [ -f "/etc/os-release" ]; then
+      . /etc/os-release
+      case $ID in
+        ubuntu|debian|pop)
+          sudo apt update
+          sudo apt install -y postgresql postgresql-contrib
+          ;;
+        fedora)
+          sudo dnf update -y
+          sudo dnf install -y postgresql postgresql-server
+          ;;
+        centos)
+          sudo yum install -y  postgresql-server postgresql-contrib
+          ;;
+        arch)
+          sudo pacman -Syu postgresql
+          ;;
+        *)
+          echo "Distro not recognized. Please install postgresql manually."
+          exit 1
+          ;;
+      esac
+    else
+      echo "Distro not recognized. Please install postgresql manually."
+      exit 1
+    fi
+    sudo postgresql-setup --initdb
+    sudo systemctl enable --now postgresql.service
+
+    # Configure PostgreSQL with environment variables
+    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${DB_PASS}';"
+    sudo -u postgres psql -c "CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASS}';"
+    sudo -u postgres psql -c "ALTER USER ${DB_USER} CREATEDB;"
+    sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
+
+    echo "PostgreSQL has been installed and configured."
+    echo "The default PostgreSQL user 'postgres' has been modified and set with the provided password."
+    echo "A new PostgreSQL user '${DB_USER}' has been created with the provided password."
+    echo "Please use these credentials to connect to the PostgreSQL database."
+  fi
+}
+
+install_python
+
 # Kill existing processes
 kill_process_by_pid_file "app_pid.txt"
-kill_process_by_name "python3"
-kill_process_by_name "ngrok"
-
 
 if [ "$NGROK" = true ]; then
   set_env_variable "NGROK_TOKEN" "Enter your ngrok token: " "Ngrok token already set up you can remove the -n | --ngrok argument"
 fi
 
-set_env_variable "DB_USER" "Enter your database user: " ""
-set_env_variable "DB_PASS" "Enter your database password: " ""
-
-# Function to install necessary packages based on the distro
-install_packages () {
-  if [ -f "/etc/os-release" ]; then
-    . /etc/os-release
-    case $ID in
-      ubuntu|debian|pop)
-        sudo apt update
-        sudo apt install -y python3 python3-pip python3-venv openssl
-        ;;
-      fedora)
-        sudo dnf install -y python3 python3-pip python3-virtualenv openssl
-        ;;
-      centos)
-        sudo yum install -y python3 python3-pip python3-virtualenv openssl
-        ;;
-      arch)
-        sudo pacman -Syu python python-pip python-virtualenv openssl
-        ;;
-      *)
-        echo "Distro not recognized. Please install python3, python3-pip, python3-venv, and openssl manually."
-        exit 1
-        ;;
-    esac
+if ! env_variable_exists "DB_USER" || ! env_variable_exists "DB_PASS" || ! env_variable_exists "DB_HOST" || ! env_variable_exists "DB_PORT" || ! env_variable_exists "DB_NAME"; then
+  read -p "Is the PostgreSQL server on another PC? [y/n]: " remote_pc
+  if [[ $remote_pc =~ ^[Yy]$ ]]; then
+    set_env_variable "DB_USER" "Enter your database user" "" "root"
+    echo
+    set_env_variable "DB_PASS" "Enter your database password" "" "root"
+    echo
+    set_env_variable "DB_HOST" "Enter your database host" "" "localhost"
+    echo
+    set_env_variable "DB_PORT" "Enter your database port" "" "5432"
+    echo
+    set_env_variable "DB_NAME" "Enter your database name" "" "nexafeed"
   else
-    echo "Distro not recognized. Please install python3, python3-pip, python3-venv, and openssl manually."
-    exit 1
+    set_env_variable "DB_USER" "Enter your database user" "" "root"
+    echo
+    set_env_variable "DB_PASS" "Enter your database password" "" "root"
+    echo
+    set_env_variable "DB_HOST" "" "" "localhost"
+    echo
+    set_env_variable "DB_PORT" "Enter your database port" "" "5432"
+    echo
+    set_env_variable "DB_NAME" "Enter your database name" "" "nexafeed"
+    echo
+    source .env
+    install_postgresql
   fi
-}
-
-# Check for Python3 and pip3, install if not exists
-if ! command_exists python3 || ! command_exists pip3; then
-  install_packages
 fi
 
 # Activate virtual environment if it exists, else create one
@@ -148,11 +231,6 @@ if [ "$FORCE_INSTALL" = true ] || [ -z "$LAST_INSTALLED" ] || [ "$REQUIREMENTS_M
     pip install -r requirements.txt --use-pep517
   fi
   echo $(date +%s) > .last_installed
-fi
-
-# Check for SSL certificates and create if not exists
-if [ "$USE_SSL" = true ]; then
-  [ ! -f "cert.pem" ] && openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
 fi
 
 # Create a runner script in the home directory if it doesn't exist

@@ -15,15 +15,16 @@ def find_first_img_src(tree):
 def fetch_media(entry):
     thumbnail = None
     video = None
+    url = getattr(entry, 'link', '')
     additional_info = {
+        'web_name': '',
         'tags': [tag['term'] for tag in entry.get('tags', [])],
         'creator': entry.get('author', '')
     }
-    url = entry.link
 
     summary = getattr(entry, 'summary', '')
     tree = html.fromstring(summary) if len(summary) > 0 else None
-    thumbnail = find_first_img_src(tree) if len(tree) > 0 else None
+    thumbnail = find_first_img_src(tree) if tree != None and len(tree) > 0 else None
 
     if "reddit.com" in url:
         video = "reddit"
