@@ -151,19 +151,22 @@ class RSSFetcher:
         async with pool.acquire() as connection:
             if search_query:
                 query = """
-                    SELECT * FROM feed_entries
-                    WHERE similarity(title, $3) > $4 OR similarity(content, $3) > $4 OR additional_info ILIKE $3
-                    ORDER BY published_date DESC
-                    LIMIT $1 OFFSET $2
+                    SELECT * FROM feed_entries 
+                    WHERE (published_date, id) < ($1, $2) AND similarity(title, $4) > $5 OR similarity(content, $4) > $5 OR similarity(additional_info->>'author', $4) > $5
+                    ORDER BY published_date DESC, id 
+                    DESC
+                    LIMIT $3
                 """
                 safe_search_query = f"%{search_query}%"
-                print(safe_search_query)
                 feeds = await connection.fetch(query, limit, offset, safe_search_query, threshold)
             else:
                 query = """
-                    SELECT * FROM feed_entries
-                    ORDER BY published_date DESC
-                    LIMIT $1 OFFSET $2
+                    SELECT * FROM feed_entries 
+                    WHERE (published_date, id) < 
+                    ($1, $2)
+                    ORDER BY published_date DESC, id 
+                    DESC
+                    LIMIT $3
                 """
                 feeds = await connection.fetch(query, limit, offset)
 
