@@ -149,7 +149,8 @@ class RSSFetcher:
         print(f"Fetching page ({limit}, {offset})")
         pool = await self.db_manager.get_pool()
         async with pool.acquire() as connection:
-            if search_query:
+            if self.searchq == search_query:
+                self.searchq = search_query
                 query = """
                     SELECT * FROM feed_entries 
                     WHERE (published_date, id) < ($1, $2) AND (similarity(title, $4) > $5 OR similarity(content, $4) > $5 OR similarity(additional_info->>'author', $4) > $5)
@@ -159,11 +160,30 @@ class RSSFetcher:
                 """
                 safe_search_query = f"%{search_query}%"
                 feeds = await connection.fetch(query, self.last_pd, self.last_id, limit, safe_search_query, threshold)
-            else:
+            elif search_query:
+                self.searchq = search_query
+                query = """
+                    SELECT * FROM feed_entries 
+                    WHERE (similarity(title, $4) > $5 OR similarity(content, $4) > $5 OR similarity(additional_info->>'author', $4) > $5)
+                    ORDER BY published_date DESC, id 
+                    DESC
+                    LIMIT $3
+                """
+                safe_search_query = f"%{search_query}%"
+                feeds = await connection.fetch(query, self.last_pd, self.last_id, limit, safe_search_query, threshold)
+            elif self.last_pd and self.last_id:
                 query = """
                     SELECT * FROM feed_entries 
                     WHERE (published_date, id) < 
                     ($1, $2)
+                    ORDER BY published_date DESC, id 
+                    DESC
+                    LIMIT $3
+                """
+                feeds = await connection.fetch(query, self.last_pd, self.last_id, limit)
+            else:
+                query = """
+                    SELECT * FROM feed_entries
                     ORDER BY published_date DESC, id 
                     DESC
                     LIMIT $3
