@@ -225,6 +225,20 @@ async def setup_postgresql():
                 print(f"Database '{DB_NAME}' created.")
             
             await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+            CREATE INDEX idx_feed_entries_published_date ON feed_entries(published_date DESC, id DESC);
+            DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM   pg_class c
+        JOIN   pg_namespace n ON n.oid = c.relnamespace
+        WHERE  c.relname = 'idx_feed_entries_author'
+        AND    n.nspname = 'public'  -- or your specific schema
+    ) THEN
+        CREATE INDEX idx_feed_entries_author ON feed_entries USING gin ((additional_info->>'author') gin_trgm_ops);
+    END IF;
+END
+$$;
 
         #await drop_table()
         await create_tables()
@@ -232,7 +246,7 @@ async def setup_postgresql():
 
         print("PostgreSQL setup completed.")
 
-    except asyncpg.exceptions.PostgresError as e:
+    except asyncpg.exceptions.PCREATE INDEX idx_feed_entries_published_date ON feed_entries(published_date DESC, id DESC);ostgresError as e:
         print(f"PostgreSQL connection failed: {e}")
 
 # Check if PostgreSQL connection is successful and perform setup
