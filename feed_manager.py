@@ -35,7 +35,7 @@ class Feed:
         
         return True
 
-    async def get_feed_items(self, category, limit, offset, search_query=""):
+    async def get_feed_items(self, category, limit, offset, search_query=None):
         start_time = time.time()
         feed_items = []
 
@@ -44,7 +44,7 @@ class Feed:
             if not self.feed:
                 return []  # Early exit if feed fetching fails
 
-        feed_items = await self.rss_fetcher.get_feed(limit, offset)
+        feed_items = await self.rss_fetcher.get_feed(limit, offset, search_query)
 
         fetch_duration = time.time() - start_time
         print(f"Fetched in {fetch_duration:.2f} seconds")

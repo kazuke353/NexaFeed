@@ -145,18 +145,33 @@ class RSSFetcher:
             print(f"Error parsing date '{date_str}': {e}")  # Debug print
             return None
     
-    async def get_feed(self, limit=50, offset=0):
+    async def get_feed(self, limit=50, offset=0, search_query=None, threshold=0.3):
         print(f"Fetching page ({limit}, {offset})")
         pool = await self.db_manager.get_pool()
         async with pool.acquire() as connection:
-            # You don't need to access the protected member _con directly.
-            query = "SELECT * FROM feed_entries ORDER BY published_date DESC LIMIT $1 OFFSET $2"
-            feeds = await connection.fetch(query, limit, offset)
+            if search_query:
+                query = """
+                    SELECT * FROM feed_entries
+                    WHERE similarity(title, $3) > $4 OR similarity(content, $3) > $4 OR additional_info ILIKE $3
+                    ORDER BY published_date DESC
+                    LIMIT $1 OFFSET $2
+                """
+                safe_search_query = f"%{search_query}%"
+                print(safe_search_query)
+                feeds = await connection.fetch(query, limit, offset, safe_search_query, threshold)
+            else:
+                query = """
+                    SELECT * FROM feed_entries
+                    ORDER BY published_date DESC
+                    LIMIT $1 OFFSET $2
+                """
+                feeds = await connection.fetch(query, limit, offset)
+
             # Process entries
             processed_entries = await asyncio.gather(
                 *(self.process_row_entry(entry) for entry in feeds)
             )
-            
+
             return processed_entries
     
     async def process_row_entry(self, entry):

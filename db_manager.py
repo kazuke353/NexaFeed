@@ -223,6 +223,8 @@ async def setup_postgresql():
             if not db_exists:
                 await conn.execute(f"CREATE DATABASE {DB_NAME} OWNER {DB_USER}")
                 print(f"Database '{DB_NAME}' created.")
+            
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
 
         #await drop_table()
         await create_tables()
