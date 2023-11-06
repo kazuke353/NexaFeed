@@ -113,13 +113,21 @@ async def startup():
     public_url = None
 
     if ngrok_token:
-        ngrok_manager = NgrokManager(ngrok_token, app_port)
-        public_url = ngrok_manager.manage_ngrok()
+        app.ngrok_manager = NgrokManager(ngrok_token, app_port)
+        public_url = app.ngrok_manager.manage_ngrok()
 
     if public_url:
         print(' * Public URL:', public_url)
     
     ngrok_token = None
+
+@app.after_serving
+async def cleanup():
+    pool = await db_manager.get_pool()
+    await pool.close()
+
+    if hasattr(app, 'ngrok_manager'):
+        app.ngrok_manager.terminate_ngrok()
 
 if __name__ == "__main__":
     opml_importer.load()

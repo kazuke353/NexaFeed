@@ -18,13 +18,21 @@ DB_NAME = os.getenv("DB_NAME")
 
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-async def drop_table():
+async def drop_table(table_name=None):
     async with asyncpg.create_pool(DATABASE_URL) as pool:
         async with pool.acquire() as conn:
             async with conn.transaction():
-                await conn.execute("""
-                    DROP TABLE IF EXISTS feed_entries;
-                """)
+                if table_name:  # If a specific table name is provided
+                    await conn.execute(f"""
+                        DROP TABLE IF EXISTS {table_name};
+                    """)
+                else:  # If no table name is provided, drop all tables listed
+                    await conn.execute("""
+                        DROP TABLE IF EXISTS feed_entries;
+                    """)
+                    await conn.execute("""
+                        DROP TABLE IF EXISTS feed_metadata;
+                    """)
 
 async def create_tables():
     async with asyncpg.create_pool(DATABASE_URL) as pool:
@@ -51,10 +59,22 @@ async def create_tables():
                         video_id TEXT,
                         additional_info TEXT,
                         published_date TIMESTAMP WITH TIME ZONE,
-                        etag TEXT,
                         url TEXT
                     )
                 """)
+
+async def drop_columns_from_table(pool, table_name, columns_to_drop):
+    # Create a single query to drop multiple columns
+    alter_statements = ', '.join([f'DROP COLUMN IF EXISTS {column}' for column in columns_to_drop])
+    drop_columns_query = f'ALTER TABLE {table_name} {alter_statements};'
+    
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            try:
+                await conn.execute(drop_columns_query)
+                print(f"Columns {columns_to_drop} have been dropped from {table_name}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
 Base = declarative_base()
 
@@ -136,6 +156,45 @@ class DBManager:
                 except Exception as e:
                     # Log the exception or re-raise if needed
                     print(f"An error occurred while inserting data into {table_name}: {e}")
+    
+    async def insert_many(self, pool, table_name, data_list, on_conflict_action="DO NOTHING", conflict_target=None, update_columns=None):
+        # Serialize any JSON fields if necessary, done once if all data rows are uniform
+        if not data_list:
+            return
+        first_row = data_list[0]
+        json_fields = {k for k, v in first_row.items() if isinstance(v, (dict, list))}
+
+        # Prepare the columns for the INSERT statement from the first data row
+        columns = ', '.join(first_row.keys())
+        values_placeholders = ', '.join(f"${i+1}" for i in range(len(first_row)))
+
+        # If conflict_target is not provided, default to the first column
+        conflict_target = conflict_target or next(iter(first_row))
+
+        # Determine update columns if not specified and not using 'DO NOTHING'
+        if update_columns is None and on_conflict_action == "DO UPDATE":
+            update_columns = [col for col in first_row if col != conflict_target]
+
+        # Prepare the ON CONFLICT clause
+        conflict_clause = "ON CONFLICT DO NOTHING"
+        if on_conflict_action == "DO UPDATE":
+            update_values = ', '.join(f"{col}=EXCLUDED.{col}" for col in update_columns)
+            conflict_clause = f"ON CONFLICT ({conflict_target}) DO UPDATE SET {update_values}"
+
+        # SQL template for inserting data
+        sql = f"INSERT INTO {table_name}({columns}) VALUES({values_placeholders}) {conflict_clause}"
+
+        # Use a prepared statement
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                # Prepare the statement once
+                prepared_stmt = await conn.prepare(sql)
+                
+                # Execute the prepared statement with each set of data
+                for row in data_list:
+                    for field in json_fields:
+                        row[field] = json.dumps(row[field])
+                    await prepared_stmt.executemany([list(row.values())])
 
 async def setup_postgresql():
     try:
@@ -167,6 +226,7 @@ async def setup_postgresql():
 
         #await drop_table()
         await create_tables()
+        #await drop_columns_from_table(pool, "feed_entries", ['etag'])
 
         print("PostgreSQL setup completed.")
 

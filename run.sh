@@ -156,20 +156,6 @@ install_postgresql () {
       echo "Distro not recognized. Please install postgresql manually."
       exit 1
     fi
-    sudo postgresql-setup --initdb
-    sudo systemctl enable --now postgresql.service
-
-    # Configure PostgreSQL with environment variables
-    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${DB_PASS}';"
-    sudo -u postgres psql -c "CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASS}';"
-    sudo -u postgres psql -c "ALTER USER ${DB_USER} CREATEDB;"
-    sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
-
-    echo "PostgreSQL has been installed and configured."
-    echo "The default PostgreSQL user 'postgres' has been modified and set with the provided password."
-    echo "A new PostgreSQL user '${DB_USER}' has been created with the provided password."
-    echo "Please use these credentials to connect to the PostgreSQL database."
   fi
 }
 
@@ -195,18 +181,33 @@ if ! env_variable_exists "DB_USER" || ! env_variable_exists "DB_PASS" || ! env_v
     echo
     set_env_variable "DB_NAME" "Enter your database name" "" "nexafeed"
   else
-    set_env_variable "DB_USER" "Enter your database user" "" "root"
+    set_env_variable "DB_USER" "" "" "postgres"
     echo
     set_env_variable "DB_PASS" "Enter your database password" "" "root"
     echo
     set_env_variable "DB_HOST" "" "" "localhost"
     echo
-    set_env_variable "DB_PORT" "Enter your database port" "" "5432"
+    set_env_variable "DB_PORT" "" "" "5432"
     echo
     set_env_variable "DB_NAME" "Enter your database name" "" "nexafeed"
     echo
+
     source .env
     install_postgresql
+
+    if ! command_exists postgresql-setup; then
+        sudo postgresql-setup --initdb
+    fi
+    sudo systemctl enable --now postgresql.service
+
+    # Configure PostgreSQL with environment variables
+    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${DB_PASS}';" 2>/dev/null
+    sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};" 2>/dev/null
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" 2>/dev/null
+
+    echo "PostgreSQL has been installed and configured."
+    echo "The default PostgreSQL user 'postgres' has been modified and set with the provided password."
+    echo "Please use these credentials to connect to the PostgreSQL database if you need."
   fi
 fi
 

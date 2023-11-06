@@ -62,29 +62,28 @@ class RSSFetcher:
         stored_last_modified = stored_headers.get("Last-Modified")
         stored_etag = stored_headers.get("ETag")
 
-        # If there is no stored ETag or Last-Modified, it's an initial fetch; return False (no update).
-        if not stored_etag and not stored_last_modified:
-            return False
-
         # Compare ETags if both the current and stored ETags are present.
-        etag_matches = current_etag == stored_etag if current_etag and stored_etag else False
+        etag_updated = (current_etag is not None) and (current_etag != stored_etag)
 
-        # Only compare Last-Modified if both dates are present and could be parsed.
-        last_modified_matches = False
+        # Compare Last-Modified dates if both are present and can be parsed.
+        last_modified_updated = False
         if current_last_modified and stored_last_modified:
             try:
                 current_last_modified_dt = datetime.strptime(current_last_modified, "%a, %d %b %Y %H:%M:%S GMT")
                 stored_last_modified_dt = datetime.strptime(stored_last_modified, "%a, %d %b %Y %H:%M:%S GMT")
-                last_modified_matches = current_last_modified_dt <= stored_last_modified_dt
+                last_modified_updated = current_last_modified_dt > stored_last_modified_dt
             except ValueError as e:
+                # Log the error for debugging purposes
                 print(f"Error parsing dates: {e}")
+                # If there is an error in parsing the dates, we can assume content update to be cautious.
+                last_modified_updated = True
 
-        # If both match, content has not been updated. If either is missing or they don't match, content has been updated.
-        content_updated = not (etag_matches and last_modified_matches)
+        # If either the ETag or Last-Modified header has changed, the content has been updated.
+        content_updated = etag_updated or last_modified_updated
 
         return content_updated
     
-    def should_update(self, url, response):
+    def should_update(self, stored_expires, response):
         """
         Determine if the feed should be updated based on the 'Expires' header.
 
@@ -102,6 +101,8 @@ class RSSFetcher:
                 
                 # If the current time is before the expiration time, no update needed
                 if datetime.now(pytz.utc) < expires_time:
+                    return False
+                if stored_expires == expires_time:
                     return False
             except ValueError as e:
                 print(f"Error parsing 'Expires' header: {e}")
@@ -186,7 +187,7 @@ class RSSFetcher:
             'url': entry['url']
         }
     
-    async def process_entry(self, entry):
+    async def process_entry(self, entry, url, feed_title=None):
         original_link = getattr(entry, 'link', '')
         published_date = None
 
@@ -206,8 +207,10 @@ class RSSFetcher:
         title = getattr(entry, 'title', '')
         summary = tree.text_content()[:100] if tree is not None else summary
         content = getattr(entry, 'content', [{}])[0].get('value', summary)
+        additional_info['web_name'] = feed_title
 
-        return {
+        processed_entry = {
+            'url': url,
             'title': title,
             'content': content,
             'summary': summary,
@@ -217,20 +220,19 @@ class RSSFetcher:
             'published_date': published_date,
             'original_link': original_link
         }
+    
+        return processed_entry, processed_entry.get('published_date')
 
     async def fetch_single_feed(self, url):
-        pool = await self.db_manager.get_pool()
-
-        async with pool.acquire() as connection:
-            conn = connection._con
-            # Retrieve the latest entry and its ETag
-            query = "SELECT * FROM feed_metadata WHERE url = $1 LIMIT 1"
-            latest_entry = await conn.fetchrow(query, url)
-            latest_date, latest_etag, latest_content_len = None, None, None
-            if latest_entry:
-                latest_date = latest_entry.get("last_modified")
-                latest_etag = latest_entry.get("etag")
-                latest_content_len = latest_entry.get("content_length")
+        latest_entry, latest_date, latest_etag, latest_content_len = None, None, None, None
+        if url in self.feed_metadata:
+            latest_entry = self.feed_metadata[url]
+            latest_date = latest_entry.get("last_modified")
+            latest_etag = latest_entry.get("etag")
+            latest_expires = latest_entry.get("expires")
+            latest_content_len = latest_entry.get("content_length")
+            if not latest_date:
+                latest_date = self.date_now
 
         headers = {'User-Agent': generate_user_agent()}
         if latest_etag:
@@ -238,83 +240,102 @@ class RSSFetcher:
         if latest_date:
             headers["If-Modified-Since"] = latest_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
     
-        async with ClientSession(connector=TCPConnector(keepalive_timeout=30, ssl=False), headers=headers, raise_for_status=True) as fetch_session:
+        async with ClientSession(connector=TCPConnector(keepalive_timeout=10, ssl=False), headers=headers) as fetch_session:
             try:
                 async with fetch_session.get(url) as response:
                     # Check for Internal Server Error
-                    if response.status == 500:
-                        return 500
-                    # Check if the content has not changed
-                    if response.status == 304 or self.check_content_update(headers, response):
-                        return 304
-                    # Check if we should update based on the 'Expires' header
-                    if not self.should_update(url, response):
-                        return 304
-                    if self.check_content_length(latest_content_len, response):
-                        return 304
+                    if response.status != 200:
+                        return [], [], response.status
+                    if latest_entry:
+                        # Check if the content has not changed
+                        if self.check_content_update(headers, response):
+                            return [], [], 304
 
                     text = await response.text()
-                    feed = feedparser.parse(text)
-                    feed_title = feed.feed.get('title', None)
+                    feed = feedparser.parse(text, etag=latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
+
+                    feed_status_code = getattr(feed, 'status', None)
+                    if feed_status_code and feed_status_code != 200:
+                        print(url, " returned status: ", feed_status_code)
+                        return [], [], feed_status_code
+
+                    feed_title = feed.feed.get('title', None) or get_website_name(url)
                     # Store the new ETag from the response for next request
                     new_etag = response.headers.get("ETag")
 
-                    # Process entries
-                    processed_entries = await asyncio.gather(
-                        *(self.process_entry(entry) for entry in feed.entries)
+                    # Process entries and collect published dates concurrently
+                    processed_entries_and_dates = await asyncio.gather(
+                        *(self.process_entry(entry, url, feed_title) for entry in feed.entries)
                     )
-    
-                    # Filter out None values if any entry failed to process
-                    processed_entries = [entry for entry in processed_entries if entry is not None]
 
-                    for entry in processed_entries:
-                        entry['url'] = url
-                        entry['etag'] = new_etag
-                        entry['additional_info']['web_name'] = feed_title if feed_title else get_website_name(url)
-                        published_date = entry['published_date']
-                        if latest_date and published_date > latest_date:
-                            latest_date = published_date
-                        await self.db_manager.insert_data(pool, "feed_entries", entry)
+                    processed_entries = []
+                    if processed_entries_and_dates:
+                        # Separate the processed entries from their published dates
+                        processed_entries, published_dates = zip(*processed_entries_and_dates)
+
+                        # Filter out None values if any entry failed to process
+                        processed_entries = [entry for entry in processed_entries if entry is not None]
+
+                        # Calculate the latest date from the non-None published dates
+                        latest_date = max((date for date in published_dates if date), default=None)
                 
-                    await self.db_manager.insert_data(pool, "feed_metadata", {
+                    metadata_update = {
                         'url': url,
                         'etag': new_etag,
                         'content_length': len(feed.entries),
-                        'last_modified': self.parse_date(latest_date),
-                        'expires': self.parse_date(response.headers.get('Expires')),
-                        'last_checked': self.parse_date(datetime.now(pytz.utc))
-                    }, "DO UPDATE")
+                        'last_modified': latest_date or self.date_now,
+                        'expires': self.parse_date(response.headers.get('Expires')) or self.date_now,
+                        'last_checked': self.date_now
+                    }
                 
-                return 200
+                return processed_entries, metadata_update, 200
             except Exception as e:
                 logging.error(f"An error occurred while fetching {url}: {e}\n{traceback.format_exc()}")
-                return 443
+                return [], [], 443
     
-    async def fetch_feeds(self, urls):
+    async def fetch_feeds(self, urls, pool):
         if not urls:
             logging.warning("The 'urls' parameter is empty.")
             return [], []
         if self.rate_limit("Init Feeds", 1, 60):
             return [], urls
-    
+
         tasks = []
         failed_urls = set()
-    
-        # Limit the number of workers using max_workers
-        semaphore = asyncio.Semaphore(self.max_workers)
-    
-        async def fetch_and_append(url):
-            async with semaphore:
-                code = await self.fetch_single_feed(url)
-                if code != 200:
-                    failed_urls.add(url)
-    
+        updated_urls = []
+        all_processed_entries = []  # Collect all processed entries here
+        metadata_updates = []  # Collect metadata updates here
+        self.date_now = self.parse_date(datetime.now(pytz.utc))
+
+        async def fetch_and_process(url):
+            processed_entries, metadata_update, code = await self.fetch_single_feed(url)
+            if code != 200:
+                failed_urls.add(url)
+            else:
+                updated_urls.append(url)
+                all_processed_entries.extend(processed_entries)
+                if metadata_update:
+                    metadata_updates.append(metadata_update)
+
+        async with pool.acquire() as connection:
+            conn = connection._con
+            query = "SELECT * FROM feed_metadata WHERE url = ANY($1)"
+            feed_metadata_entries = await conn.fetch(query, urls)
+            self.feed_metadata = {entry['url']: entry for entry in feed_metadata_entries}
+
         for url in urls:
-            task = asyncio.create_task(fetch_and_append(url))
+            task = asyncio.create_task(fetch_and_process(url))
             tasks.append(task)
-    
+
         await asyncio.gather(*tasks)
-    
+
+        # Now use insert_many for all processed entries
+        if all_processed_entries:
+            await self.db_manager.insert_many(pool, "feed_entries", all_processed_entries)
+        # And for all metadata updates
+        if metadata_updates:
+            await self.db_manager.insert_many(pool, "feed_metadata", metadata_updates, "DO UPDATE")
+
         return failed_urls, []
     
     def remove_failed_feeds(self, config_manager, category, failed_urls):

@@ -17,8 +17,9 @@ class Feed:
             self.rss_fetcher = RSSFetcher(self.db_manager)
         
         self.urls = self.config_manager.get(f'{category}_feed_urls', [])
+        pool = await self.db_manager.get_pool()
         try:
-            failed_urls, rate_limited_urls = await self.rss_fetcher.fetch_feeds(self.urls)
+            failed_urls, rate_limited_urls = await self.rss_fetcher.fetch_feeds(self.urls, pool)
         except ValueError:
             print("Error: init_fetch did not return enough values.")
         
