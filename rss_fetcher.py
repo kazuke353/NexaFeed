@@ -158,7 +158,7 @@ class RSSFetcher:
                     LIMIT $3
                 """
                 safe_search_query = f"%{search_query}%"
-                feeds = await connection.fetch(query, limit, offset, safe_search_query, threshold)
+                feeds = await connection.fetch(query, self.last_pd, self.last_id, limit, safe_search_query, threshold)
             else:
                 query = """
                     SELECT * FROM feed_entries 
@@ -168,12 +168,15 @@ class RSSFetcher:
                     DESC
                     LIMIT $3
                 """
-                feeds = await connection.fetch(query, limit, offset)
+                feeds = await connection.fetch(query, self.last_pd, self.last_id, limit)
 
             # Process entries
             processed_entries = await asyncio.gather(
                 *(self.process_row_entry(entry) for entry in feeds)
             )
+
+            last_entry = processed_entries.last()
+            self.last_id, self.last_pd = last_entry['id'], last_entry['published_date']
 
             return processed_entries
     
