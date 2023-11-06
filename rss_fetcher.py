@@ -175,8 +175,9 @@ class RSSFetcher:
                 *(self.process_row_entry(entry) for entry in feeds)
             )
 
-            last_entry = processed_entries.last()
-            self.last_id, self.last_pd = last_entry['id'], last_entry['published_date']
+            if processed_entries:
+    last_entry = processed_entries[-1]
+    self.last_id, self.last_pd = last_entry['id'], last_entry['published_date']
 
             return processed_entries
     
