@@ -152,7 +152,7 @@ class RSSFetcher:
             if search_query:
                 query = """
                     SELECT * FROM feed_entries 
-                    WHERE (published_date, id) < ($1, $2) AND similarity(title, $4) > $5 OR similarity(content, $4) > $5 OR similarity(additional_info->>'author', $4) > $5
+                    WHERE (published_date, id) < ($1, $2) AND (similarity(title, $4) > $5 OR similarity(content, $4) > $5 OR similarity(additional_info->>'author', $4) > $5)
                     ORDER BY published_date DESC, id 
                     DESC
                     LIMIT $3
@@ -176,8 +176,8 @@ class RSSFetcher:
             )
 
             if processed_entries:
-    last_entry = processed_entries[-1]
-    self.last_id, self.last_pd = last_entry['id'], last_entry['published_date']
+                last_entry = processed_entries[-1]
+                self.last_id, self.last_pd = last_entry['id'], last_entry['published_date']
 
             return processed_entries
     
