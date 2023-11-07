@@ -225,8 +225,6 @@ async def setup_postgresql():
                 await conn.execute(f"CREATE DATABASE {DB_NAME} OWNER {DB_USER}")
                 print(f"Database '{DB_NAME}' created.")
 
-
-
         #await drop_table()
         await create_tables()
         #await drop_columns_from_table(pool, "feed_entries", ['etag'])
