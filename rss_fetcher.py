@@ -26,11 +26,15 @@ def get_website_name(url):
         return None
 
 class RSSFetcher:
+    BASE_QUERY = "SELECT * FROM feed_entries"
+    ORDER_AND_LIMIT = "ORDER BY published_date DESC, id DESC LIMIT $1::bigint"
+
     def __init__(self, db_manager, max_workers=45):
         self.db_manager = db_manager
         self.max_workers = max_workers
         self.session = None
         self.clients = {}
+        self.last_id, self.last_pd, self.search = None, None, None
         self.date_attributes = ['published', 'pubDate', 'updated', 'published_date']
     
     def rate_limit(self, client_id, limit, time_window):
@@ -145,35 +149,53 @@ class RSSFetcher:
             print(f"Error parsing date '{date_str}': {e}")  # Debug print
             return None
     
-    async def get_feed(self, limit=50, offset=0, search_query=None, threshold=0.3):
-        print(f"Fetching page ({limit}, {offset})")
+    async def get_feed(self, limit=50, search_query=None, threshold=0.1):
+        print(f"Fetching feed with limit {limit}")
         pool = await self.db_manager.get_pool()
+        parameters = [int(limit)]
+
+        # Reset last pagination parameters if a new search query is initiated
+        if not search_query and self.search:
+            self.last_id, self.last_pd = None, None
+
+        # Initialize the where_clause as an empty string
+        where_clause = ""
+
+        # If a search query is provided, add to the WHERE clause
+        if search_query:
+            where_clause += """
+                WHERE (similarity(title, $2) > $3 OR similarity(content, $2) > $3 
+                OR similarity(additional_info->>'creator', $2) > $3)
+            """
+            parameters.extend([search_query, threshold])
+
+        # If pagination parameters exist, append them to the WHERE clause
+        if self.last_pd and self.last_id:
+            # If a search query already exists, add AND otherwise WHERE
+            where_clause += f"{' AND' if 'WHERE' in where_clause else ' WHERE'} (published_date, id) < (${'4' if search_query else '2'}, ${'5' if search_query else '3'})"
+            parameters.extend([self.last_pd, self.last_id])
+
+        query = f"{self.BASE_QUERY} {where_clause} {self.ORDER_AND_LIMIT}"
+
+        # Make sure parameters are in the correct order and the correct amount
+        expected_param_count = 1 + (2 if search_query else 0) + (2 if self.last_pd and self.last_id else 0)
+        assert len(parameters) == expected_param_count, f"Expected {expected_param_count} parameters, got {len(parameters)}"
+
         async with pool.acquire() as connection:
-            if search_query:
-                query = """
-                    SELECT * FROM feed_entries
-                    WHERE similarity(title, $3) > $4 OR similarity(content, $3) > $4 OR additional_info ILIKE $3
-                    ORDER BY published_date DESC
-                    LIMIT $1 OFFSET $2
-                """
-                safe_search_query = f"%{search_query}%"
-                print(safe_search_query)
-                feeds = await connection.fetch(query, limit, offset, safe_search_query, threshold)
-            else:
-                query = """
-                    SELECT * FROM feed_entries
-                    ORDER BY published_date DESC
-                    LIMIT $1 OFFSET $2
-                """
-                feeds = await connection.fetch(query, limit, offset)
+            feeds = await connection.fetch(query, *parameters)
 
-            # Process entries
-            processed_entries = await asyncio.gather(
-                *(self.process_row_entry(entry) for entry in feeds)
-            )
+        # Process entries
+        processed_entries = await asyncio.gather(
+            *(self.process_row_entry(entry) for entry in feeds)
+        )
 
-            return processed_entries
-    
+        # Update the last_id and last_pd for pagination if we have entries
+        if processed_entries:
+            last_entry = processed_entries[-1]
+            self.last_id, self.last_pd, self.search = last_entry['id'], last_entry['published_date'], search_query
+
+        return processed_entries
+
     async def process_row_entry(self, entry):
         published_date = None
 
@@ -191,6 +213,7 @@ class RSSFetcher:
             additional_info = None
 
         return {
+            'id': entry['id'],
             'title': entry['title'],
             'content': entry['content'],
             'summary': entry['summary'],

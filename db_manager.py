@@ -51,16 +51,17 @@ async def create_tables():
                 """)
                 await conn.execute("""
                     CREATE TABLE IF NOT EXISTS feed_entries (
-                        original_link TEXT PRIMARY KEY,
+                        id BIGSERIAL PRIMARY KEY,
+                        original_link TEXT UNIQUE,
                         title TEXT,
                         content TEXT,
                         summary TEXT,
                         thumbnail TEXT,
                         video_id TEXT,
-                        additional_info TEXT,
+                        additional_info JSONB,
                         published_date TIMESTAMP WITH TIME ZONE,
                         url TEXT
-                    )
+                    );
                 """)
 
 async def drop_columns_from_table(pool, table_name, columns_to_drop):
@@ -223,12 +224,17 @@ async def setup_postgresql():
             if not db_exists:
                 await conn.execute(f"CREATE DATABASE {DB_NAME} OWNER {DB_USER}")
                 print(f"Database '{DB_NAME}' created.")
-            
-            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+
+
 
         #await drop_table()
         await create_tables()
         #await drop_columns_from_table(pool, "feed_entries", ['etag'])
+
+        async with pool.acquire() as conn:
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_published_date ON feed_entries(published_date DESC, id DESC);")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'creator') gin_trgm_ops);")
 
         print("PostgreSQL setup completed.")
 

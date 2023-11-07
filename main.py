@@ -90,8 +90,7 @@ def refresh_config():
 async def paginate(category, page_num):
     search_query = request.args.get('q')
     limit = config_manager.get("feed.size", 20)
-    offset = (page_num - 1) * limit
-    paginated_feeds = await feed.get_feed_items(category, limit, offset, search_query)
+    paginated_feeds = await feed.get_feed_items(category, limit, search_query)
     return await render_template('feed_items.html', feed_items=paginated_feeds)
 
 @app.route('/api/reddit/<string:uri>', methods=['GET'])
