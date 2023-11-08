@@ -28,7 +28,7 @@ feed = Feed(db_manager, config_manager)
 # Dictionary to store request counts and timestamps
 clients = {}
 
-def rate_limit(client_id, limit, time_window):
+async def rate_limit(client_id, limit, time_window):
     current_time = datetime.now()
     request_info = clients.get(client_id, {"count": 0, "time": current_time})
 
@@ -44,11 +44,11 @@ def rate_limit(client_id, limit, time_window):
 def rate_limiter(limit, time_window):
     def decorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             client_id = request.remote_addr
-            if not rate_limit(client_id, limit, time_window):
+            if not await rate_limit(client_id, limit, time_window):
                 return jsonify({"error": "rate limit exceeded"}), 429
-            return func(*args, **kwargs)
+            return await func(*args, **kwargs)
         return wrapper
     return decorator
 
@@ -74,9 +74,27 @@ def log_and_respond(message, exception, status_code):
 @app.route('/')
 @handle_route_errors
 async def root():
+    print("LMAOO")
     return await render_template('index.html')
 
+@app.route('/api/fetch/<string:category>')
+@rate_limiter(limit=2, time_window=1)
+async def paginate(category):
+    print("XDDDD")
+    last_id = request.args.get('last_id')
+    last_pd = request.args.get('last_pd')
+    search_query = request.args.get('q')
+
+    if last_id and last_pd:
+        print(last_id, " | ", last_pd)
+
+    limit = config_manager.get("feed.size", 20)
+    paginated_feeds, last_id, last_pd = await feed.get_feed_items(category, limit, last_id, last_pd, search_query)
+    paginated_feeds_html = await render_template('feed_items.html', feed_items=paginated_feeds, last_page=[last_id, last_pd])
+    return jsonify(html=paginated_feeds_html, last_page=[last_id, last_pd])
+
 @app.route('/refresh', methods=['GET'])
+@rate_limiter(limit=1, time_window=60)
 def refresh_config():
     try:
         cache.clear()
@@ -85,13 +103,6 @@ def refresh_config():
         return {"status": "success", "message": "Configuration and OPML reloaded"}, 200
     except Exception as e:
         return {"status": "error", "message": str(e)}, 500
-
-@app.route('/<string:category>/page/<int:page_num>')
-async def paginate(category, page_num):
-    search_query = request.args.get('q')
-    limit = config_manager.get("feed.size", 20)
-    paginated_feeds = await feed.get_feed_items(category, limit, search_query)
-    return await render_template('feed_items.html', feed_items=paginated_feeds)
 
 @app.route('/api/reddit/<string:uri>', methods=['GET'])
 async def reddit_media(uri):

@@ -34,7 +34,6 @@ class RSSFetcher:
         self.max_workers = max_workers
         self.session = None
         self.clients = {}
-        self.last_id, self.last_pd, self.search = None, None, None
         self.date_attributes = ['published', 'pubDate', 'updated', 'published_date']
     
     def rate_limit(self, client_id, limit, time_window):
@@ -149,14 +148,10 @@ class RSSFetcher:
             print(f"Error parsing date '{date_str}': {e}")  # Debug print
             return None
     
-    async def get_feed(self, limit=50, search_query=None, threshold=0.1):
+    async def get_feed(self, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.3):
         print(f"Fetching feed with limit {limit}")
         pool = await self.db_manager.get_pool()
         parameters = [int(limit)]
-
-        # Reset last pagination parameters if a new search query is initiated
-        if not search_query and self.search:
-            self.last_id, self.last_pd = None, None
 
         # Initialize the where_clause as an empty string
         where_clause = ""
@@ -170,15 +165,15 @@ class RSSFetcher:
             parameters.extend([search_query, threshold])
 
         # If pagination parameters exist, append them to the WHERE clause
-        if self.last_pd and self.last_id:
+        if last_pd and last_id:
             # If a search query already exists, add AND otherwise WHERE
             where_clause += f"{' AND' if 'WHERE' in where_clause else ' WHERE'} (published_date, id) < (${'4' if search_query else '2'}, ${'5' if search_query else '3'})"
-            parameters.extend([self.last_pd, self.last_id])
+            parameters.extend([self.parse_date(last_pd), int(last_id)])
 
         query = f"{self.BASE_QUERY} {where_clause} {self.ORDER_AND_LIMIT}"
 
         # Make sure parameters are in the correct order and the correct amount
-        expected_param_count = 1 + (2 if search_query else 0) + (2 if self.last_pd and self.last_id else 0)
+        expected_param_count = 1 + (2 if search_query else 0) + (2 if last_pd and last_id else 0)
         assert len(parameters) == expected_param_count, f"Expected {expected_param_count} parameters, got {len(parameters)}"
 
         async with pool.acquire() as connection:
@@ -192,9 +187,9 @@ class RSSFetcher:
         # Update the last_id and last_pd for pagination if we have entries
         if processed_entries:
             last_entry = processed_entries[-1]
-            self.last_id, self.last_pd, self.search = last_entry['id'], last_entry['published_date'], search_query
+            last_id, last_pd = last_entry.get('id'), last_entry.get('published_date')
 
-        return processed_entries
+        return processed_entries, last_id, last_pd
 
     async def process_row_entry(self, entry):
         published_date = None
@@ -335,8 +330,6 @@ class RSSFetcher:
         if not urls:
             logging.warning("The 'urls' parameter is empty.")
             return [], []
-        if self.rate_limit("Init Feeds", 1, 60):
-            return [], urls
 
         tasks = []
         failed_urls = set()

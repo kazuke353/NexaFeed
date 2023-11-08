@@ -1,6 +1,4 @@
-
 from rss_fetcher import RSSFetcher
-from fuzzywuzzy import fuzz
 import time
 
 class Feed:
@@ -9,7 +7,7 @@ class Feed:
         self.db_manager = db_manager
         self.config_manager = config_manager
         self.urls = None
-        self.feed = False
+        self.feed = {}
     
     async def init_fetch(self, category):
         start_time = time.time()
@@ -35,18 +33,18 @@ class Feed:
         
         return True
 
-    async def get_feed_items(self, category, limit, search_query=None):
+    async def get_feed_items(self, category, limit, last_id=None, last_pd=None, search_query=None):
         start_time = time.time()
         feed_items = []
 
-        if not self.feed:
-            self.feed = await self.init_fetch(category)
-            if not self.feed:
-                return []  # Early exit if feed fetching fails
+        if category not in self.feed or not self.feed[category]:
+            self.feed[category] = await self.init_fetch(category)
+            if not self.feed[category]:
+                return [], None, None  # Early exit if feed fetching fails
 
-        feed_items = await self.rss_fetcher.get_feed(limit, search_query)
+        feed_items, last_id, last_pd = await self.rss_fetcher.get_feed(limit, last_id, last_pd, search_query)
 
         fetch_duration = time.time() - start_time
         print(f"Fetched in {fetch_duration:.2f} seconds")
         
-        return feed_items
+        return feed_items, last_id, last_pd
