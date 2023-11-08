@@ -55,31 +55,30 @@ NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with
 
 Experience the future of feed reading with NexaFeed – Your gateway to organized, efficient, and enjoyable content consumption.
 
-## Tech Stack 🛠
+## Tech Stack 🛠️
 
-NexaFeed: A Fusion of Cutting-Edge Technologies for Peak Performance and User Experience
+### Backend
+- Python: The core programming language for server-side logic.
+- Quart: Asynchronous Python web microframework.
+- feedparser: Library for parsing RSS/Atom feeds.
+- pyngrok: Tool to expose local servers to the public internet securely.
+- cachetools: Caching mechanisms for Python functions.
+- python-dateutil: Library for parsing and manipulating dates and times.
+- requests: Library for making HTTP requests.
+- user_agent: Library for parsing and generating user agent strings.
+- lxml: Library for XML and HTML parsing.
+- aiohttp: Library for asynchronous HTTP requests in Python.
+- ruamel.yaml: Library for YAML parsing and manipulation.
 
-### Backend: The Power Behind the Performance
-- **[Python](https://www.python.org/)**: The cornerstone of our backend, chosen for its versatility and robustness in server-side logic.
-- **[Quart](https://pgjones.gitlab.io/quart/)**: A Python web microframework, leveraging Asyncio for high-speed asynchronous processing, ensuring rapid response and handling.
-- **[feedparser](https://pypi.org/project/feedparser/)**: Used for parsing RSS and Atom feeds, enabling us to gather and process feed data efficiently.
-- **[pyngrok](https://pyngrok.readthedocs.io/)**: Pyngrok allows us to expose local web servers to the internet securely, facilitating testing and development.
-- **[cachetools](https://pypi.org/project/cachetools/)**: Cachetools enhances performance by providing caching solutions for Python functions.
-- **[python-dateutil](https://dateutil.readthedocs.io/)**: Python-dateutil simplifies date and time handling, improving accuracy and readability in our backend.
-- **[requests](https://docs.python-requests.org/)**: Utilized for making HTTP requests, enabling seamless communication with external APIs.
-- **[user_agent](https://pypi.org/project/user-agent/)**: User_agent helps us parse and generate user agent strings, enhancing user tracking and analytics.
-- **[lxml](https://lxml.de/)**: Lxml is employed for efficient XML and HTML parsing, aiding in data extraction and manipulation.
-- **[aiohttp](https://docs.aiohttp.org/)**: Aiohttp is used for asynchronous HTTP requests, improving the efficiency of our backend operations.
-- **[fuzzywuzzy](https://pypi.org/project/fuzzywuzzy/)**: Fuzzywuzzy assists in fuzzy string matching, enhancing text search and comparison.
-- **[ruamel.yaml](https://yaml.readthedocs.io/)**: Ruamel.yaml is employed for YAML parsing and manipulation, ensuring compatibility with configuration files.
-- **[python-Levenshtein](https://pypi.org/project/python-Levenshtein/)**: Python-Levenshtein provides tools for measuring string similarity and edit distances, useful for text processing tasks.
+### Frontend
+- Bootstrap: Frontend framework for responsive design.
+- Alpine.js: Minimal JavaScript framework for reactive components.
 
-### Frontend: Responsive and Intuitive Interface
-- **[Bootstrap](https://getbootstrap.com/)**: Our choice for a sleek, responsive design. Bootstrap ensures NexaFeed is visually appealing and functional on any device.
-- **[Alpine.js](https://alpinejs.dev/)**: This minimal JavaScript framework empowers our frontend. With Alpine.js, we seamlessly bind JavaScript behavior to HTML, creating an intuitive user interface without over-complicating the tech stack.
+### Templating
+- Jinja2: Templating engine for Python.
 
-### Templating: Efficient and Designer-Friendly
-- **[Jinja2](https://jinja.palletsprojects.com/)**: A top-tier templating engine that aligns perfectly with Python. Jinja2 is renowned for its simplicity, flexibility, and powerful integration capabilities.
+### Database
+- PostgreSQL: Object-relational database system for secure and scalable storage.
 
 Our mission with NexaFeed was to craft a self-hosted solution that doesn't just meet but exceeds your expectations. Customizable, robust, and user-friendly - NexaFeed is more than an RSS reader; it's a testament to what modern web technologies can achieve.
 
