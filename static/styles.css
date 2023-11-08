@@ -96,7 +96,11 @@ body {
     align-items: center;
 }
 
-.modal-body{max-height:calc(100% - 50px);overflow-y:auto;position:relative}
+.modal-body {
+    max-height: calc(100% - 50px);
+    overflow-y: auto;
+    position: relative
+}
 
 .modal-footer {
     position: absolute;
@@ -222,4 +226,16 @@ body {
 .no-scroll {
     overflow: hidden;
     height: 100%
+}
+
+#notification {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+#notification i {
+    margin-right: 5px;
 }

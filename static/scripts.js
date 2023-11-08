@@ -2,10 +2,12 @@ function feedManager() {
     return feedManager_func;
 }
 
+let feedUpdateTimer;
 const feedManager_func = {
     currentCategory: "main",
     searchQuery: "",
     feedCache: {},
+    fetchedFeed: null,
     lastId: null,
     lastPd: null,
     loading: false,
@@ -13,12 +15,16 @@ const feedManager_func = {
 
     changeTheme: window.changeTheme,
 
-    init(isSearch = false) {
-        console.log('INIT');
-        if (isSearch) {
-            this.clearCacheAndFeeds();
-        }
-        this.fetchFeeds(this.currentCategory);
+    init(isInit = false) {
+        this.fetchFeeds(this.currentCategory, isInit);
+        this.startFeedUpdates();
+
+        // Add event listener to hide notification on click
+        const notification = document.getElementById("notification");
+        notification.addEventListener("click", () => {
+            this.hideNotification();
+            this.fetchFeeds(this.currentCategory, true, this.fetchedFeed);
+        });
     },
 
     clearCacheAndFeeds() {
@@ -30,50 +36,91 @@ const feedManager_func = {
 
     search() {
         this.searchQuery = document.getElementById("search-box").value.trim();
-        if (this.searchQuery.length > 0) {
-            this.clearCacheAndFeeds();
-            this.fetchFeeds(this.currentCategory);
-        } else {
-            this.init();
-        }
+        this.fetchFeeds(this.currentCategory, this.searchQuery.length > 0);
     },
 
-    async fetchFeeds(category) {
+    async callFetch(url) {
+        const response = await fetch(url);
+        // Check if the response header is 'application/json'
+        if (response.headers.get("content-type").includes("application/json")) {
+            const data = await response.json();
+
+            return data;
+        }
+
+        return null;
+    },
+
+    async fetchFeeds(category, isInit = false, feed = null) {
         try {
-            console.log('CALLED');
-            let url = `/api/fetch/${category}`;
-            const queryParams = [];
-            if (this.lastSearch && (this.searchQuery.length == 0 || this.searchQuery != this.lastSearch))
-            {
+            if (feed) {
                 this.clearCacheAndFeeds();
-            }
-            if (this.searchQuery.length > 0) {
-                queryParams.push(`q=${encodeURIComponent(this.searchQuery)}`);
-            }
-            if (this.lastId) {
-                queryParams.push(`last_id=${encodeURIComponent(this.lastId)}`);
-            }
-            if (this.lastPd) {
-                queryParams.push(`last_pd=${encodeURIComponent(this.lastPd)}`);
-            }
-            if (queryParams.length > 0) {
-                url += "?"
-            }
-            url += queryParams.join('&');
-            const response = await fetch(url);
-            // Check if the response header is 'application/json'
-            if (response.headers.get("content-type").includes("application/json")) {
-                const data = await response.json();
-                const html = data.html;
-                const lastId = data.last_page[0];
-                const lastPd = data.last_page[1];
-                this.feedCache[category] = (this.feedCache[category] || "") + html;
-                document.querySelector(".feed-container").innerHTML = this.feedCache[category];
+                const html = feed.html;
+                const lastId = feed.last_page[0];
+                const lastPd = feed.last_page[1];
+
+                this.feedCache[category] =
+                    (this.feedCache[category] || "") + html;
+                document.querySelector(".feed-container").innerHTML =
+                    this.feedCache[category];
                 this.lastId = lastId;
                 this.lastPd = lastPd;
             } else {
-                // If response is not JSON, handle it here
-                console.error('Response is not JSON:', await response.text());
+                let url = `/api/fetch/${category}`;
+                const queryParams = [];
+                if (
+                    isInit ||
+                    (this.lastSearch &&
+                        (this.searchQuery.length == 0 ||
+                            this.searchQuery != this.lastSearch))
+                ) {
+                    this.clearCacheAndFeeds();
+                }
+                if (this.searchQuery.length > 0) {
+                    queryParams.push(
+                        `q=${encodeURIComponent(this.searchQuery)}`
+                    );
+                }
+                if (this.lastId) {
+                    queryParams.push(
+                        `last_id=${encodeURIComponent(this.lastId)}`
+                    );
+                }
+                if (this.lastPd) {
+                    queryParams.push(
+                        `last_pd=${encodeURIComponent(this.lastPd)}`
+                    );
+                }
+                if (isInit) {
+                    queryParams.push(
+                        `force_init=${encodeURIComponent(isInit)}`
+                    );
+                }
+                if (queryParams.length > 0) {
+                    url += "?";
+                }
+                url += queryParams.join("&");
+
+                const data = await this.callFetch(url);
+                // Check if the response header is 'application/json'
+                if (data) {
+                    const html = data.html;
+                    const lastId = data.last_page[0];
+                    const lastPd = data.last_page[1];
+
+                    this.feedCache[category] =
+                        (this.feedCache[category] || "") + html;
+                    document.querySelector(".feed-container").innerHTML =
+                        this.feedCache[category];
+                    this.lastId = lastId;
+                    this.lastPd = lastPd;
+                } else {
+                    // If response is not JSON, handle it here
+                    console.error(
+                        "Response is not JSON:",
+                        await response.text()
+                    );
+                }
             }
         } catch (error) {
             console.error(`Error fetching feeds for ${category}:`, error);
@@ -81,18 +128,18 @@ const feedManager_func = {
     },
 
     handleScroll() {
-      if (this.loading) return;
-    
-      let { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-      let atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight;
-    
-      if (atBottom) {
-        this.loading = true;
-        this.fetchFeeds(this.currentCategory).then(() => {
-            console.log('SCROLLING');
-            this.loading = false;
-        });
-      }
+        if (this.loading) return;
+
+        let { scrollTop, scrollHeight, clientHeight } =
+            document.documentElement;
+        let atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight;
+
+        if (atBottom) {
+            this.loading = true;
+            this.fetchFeeds(this.currentCategory).then(() => {
+                this.loading = false;
+            });
+        }
     },
 
     highlightActiveCategory() {
@@ -105,7 +152,73 @@ const feedManager_func = {
     goBack() {
         this.searchQuery = "";
         document.getElementById("search-box").value = this.searchQuery;
-        this.init(true);
+        this.fetchFeeds(this.currentCategory, true);
+    },
+
+    startFeedUpdates() {
+        this.stopFeedUpdates(); // Stop any existing timer before starting a new one
+    
+        const checkForUpdates = async () => {
+            let url = `/api/fetch/${this.currentCategory}?force_init=True`;
+            const data = await this.callFetch(url);
+    
+            // Check if there are new updates
+            const html = data.html;
+            const newContentExists = this.checkForNewContent(html);
+    
+            if (newContentExists) {
+                this.showNotification();
+                this.fetchedFeed = data;
+            }
+    
+            // Call the function again after a short delay
+            setTimeout(checkForUpdates, 60000); // Adjust the delay as needed
+        };
+    
+        // Start checking for updates
+        checkForUpdates();
+    },
+
+    checkForNewContent(html) {
+        const currentFeedCache = this.feedCache[this.currentCategory];
+
+        // If feedCache for current category is empty, consider all content as new
+        if (!currentFeedCache) {
+            return true;
+        }
+
+        // Split the current feedCache into individual entries
+        const currentEntries = currentFeedCache.split("</div>");
+
+        // Get the first entry of the current feedCache
+        const currentFirstEntry = currentEntries[0];
+
+        // Split the fetched html into individual entries
+        const fetchedEntries = html.split("</div>");
+
+        // Get the first entry of the fetched html
+        const fetchedFirstEntry = fetchedEntries[0];
+
+        // Check if the first entry of fetched html is different from the first entry of current feedCache
+        return fetchedFirstEntry !== currentFirstEntry;
+    },
+
+    stopFeedUpdates() {
+        // Clear the existing timer, if any
+        if (feedUpdateTimer) {
+            clearInterval(feedUpdateTimer);
+            feedUpdateTimer = null;
+        }
+    },
+
+    showNotification() {
+        const notification = document.getElementById("notification");
+        notification.classList.remove("d-none");
+    },
+
+    hideNotification() {
+        const notification = document.getElementById("notification");
+        notification.classList.add("d-none");
     },
 };
 

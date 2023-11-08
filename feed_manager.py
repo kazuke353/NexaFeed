@@ -33,11 +33,11 @@ class Feed:
         
         return True
 
-    async def get_feed_items(self, category, limit, last_id=None, last_pd=None, search_query=None):
+    async def get_feed_items(self, category, limit, last_id=None, last_pd=None, search_query=None, force_init=False):
         start_time = time.time()
         feed_items = []
 
-        if category not in self.feed or not self.feed[category]:
+        if force_init or (category not in self.feed or not self.feed[category]):
             self.feed[category] = await self.init_fetch(category)
             if not self.feed[category]:
                 return [], None, None  # Early exit if feed fetching fails

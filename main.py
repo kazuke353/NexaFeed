@@ -74,22 +74,18 @@ def log_and_respond(message, exception, status_code):
 @app.route('/')
 @handle_route_errors
 async def root():
-    print("LMAOO")
     return await render_template('index.html')
 
 @app.route('/api/fetch/<string:category>')
 @rate_limiter(limit=2, time_window=1)
 async def paginate(category):
-    print("XDDDD")
     last_id = request.args.get('last_id')
     last_pd = request.args.get('last_pd')
     search_query = request.args.get('q')
-
-    if last_id and last_pd:
-        print(last_id, " | ", last_pd)
+    force_init = request.args.get('force_init', False)
 
     limit = config_manager.get("feed.size", 20)
-    paginated_feeds, last_id, last_pd = await feed.get_feed_items(category, limit, last_id, last_pd, search_query)
+    paginated_feeds, last_id, last_pd = await feed.get_feed_items(category, limit, last_id, last_pd, search_query, force_init=force_init)
     paginated_feeds_html = await render_template('feed_items.html', feed_items=paginated_feeds, last_page=[last_id, last_pd])
     return jsonify(html=paginated_feeds_html, last_page=[last_id, last_pd])
 
