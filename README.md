@@ -72,9 +72,15 @@ Experience the future of feed reading with NexaFeed – Your gateway to organize
 - aiohttp: Library for asynchronous HTTP requests in Python.
 - ruamel.yaml: Library for YAML parsing and manipulation.
 
-### Frontend
-- Bootstrap: Frontend framework for responsive design.
-- Alpine.js: Minimal JavaScript framework for reactive components.
+### Frontend Technologies
+
+In this project, the frontend is built using a combination of modern tools and frameworks, each chosen for their specific strengths in creating a responsive and interactive user interface.
+
+- **Bootstrap**: A powerful and popular frontend framework that is used for developing responsive and mobile-first web pages. It provides a wide range of CSS and JavaScript tools for creating layouts, forms, buttons, navigation, and other interface components, ensuring a consistent and attractive design across various devices and screen sizes.
+
+- **Alpine.js**: This is a lightweight and minimalistic JavaScript framework, ideal for handling reactive and dynamic components on the frontend. Alpine.js allows us to add sophisticated interactive behaviors to our web pages without the overhead of larger frameworks. It's particularly useful for creating dropdowns, modals, and tabs with ease, enhancing user experience with its simplicity and efficiency.
+
+- **FontAwesome**: An extensive library of icons, FontAwesome is integrated to enhance the user interface with visually appealing and recognizable symbols. These icons are used throughout the website to aid in navigation, illustrate concepts, and improve the overall aesthetic appeal. FontAwesome's vast collection ensures that we have a wide variety of icons to choose from, suitable for various contexts and design needs.
 
 ### Templating
 - Jinja2: Templating engine for Python.
