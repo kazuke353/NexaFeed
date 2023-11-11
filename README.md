@@ -187,12 +187,12 @@ Here are some upcoming features and improvements planned for NexaFeed:
 
 ### Planned Features
 
-- **Reddit Video Embed**: Support for embedding Reddit videos directly into the feed.
-- **Add/Remove RSS Feeds**: The ability to add and remove RSS feeds directly within the web app.
-- **Category Management**: Create, edit, and remove categories for better feed organization.
-- **RSS Feed Names**: Display the names of the RSS feeds alongside the tags, maintaining a consistent style.
-- **Mark as Read**: Functionality to mark articles as read.
-- **Video Watch Time**: Save the watched time of videos and restore it when revisiting.
+- &#10006; **Reddit Video Embed**: Support for embedding Reddit videos directly into the feed.
+- &#10006; **Add/Remove RSS Feeds**: The ability to add and remove RSS feeds directly within the web app.
+- &#10006; **Category Management**: Create, edit, and remove categories for better feed organization.
+- &#10004; **RSS Feed Names**: Display the names of the RSS feeds alongside the tags, maintaining a consistent style.
+- &#10006; **Mark as Read**: Functionality to mark articles as read.
+- &#10006; **Video Watch Time**: Save the watched time of videos and restore it when revisiting.
 
 ## License
 
