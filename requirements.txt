@@ -26,5 +26,8 @@ ruamel.yaml
 # Caching tools
 cachetools
 
+# String manipulation and comparison
+rapidfuzz
+
 # Configuration and environment management
 python-dotenv

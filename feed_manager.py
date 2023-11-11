@@ -7,10 +7,10 @@ class Feed:
         self.db_manager = db_manager
         self.config_manager = config_manager
         self.urls = None
-        self.feed = {}
     
     async def init_fetch(self, category):
         start_time = time.time()
+
         if not self.rss_fetcher:
             self.rss_fetcher = RSSFetcher(self.db_manager)
         
@@ -37,9 +37,12 @@ class Feed:
         start_time = time.time()
         feed_items = []
 
-        if force_init or (category not in self.feed or not self.feed[category]):
-            self.feed[category] = await self.init_fetch(category)
-            if not self.feed[category]:
+        if not self.rss_fetcher:
+            self.rss_fetcher = RSSFetcher(self.db_manager)
+
+        if force_init:
+            response = await self.init_fetch(category)
+            if not response:
                 return [], None, None  # Early exit if feed fetching fails
 
         feed_items, last_id, last_pd = await self.rss_fetcher.get_feed(limit, last_id, last_pd, search_query)

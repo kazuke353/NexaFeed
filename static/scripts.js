@@ -15,7 +15,7 @@ const feedManager_func = {
 
     changeTheme: window.changeTheme,
 
-    init(isInit = false) {
+    startFetch(isInit = false) {
         this.fetchFeeds(this.currentCategory, isInit);
         this.startFeedUpdates();
 
@@ -114,6 +114,8 @@ const feedManager_func = {
                         this.feedCache[category];
                     this.lastId = lastId;
                     this.lastPd = lastPd;
+                } else if (!isInit) {
+                    fetchFeeds(category, true);
                 } else {
                     // If response is not JSON, handle it here
                     console.error(
@@ -122,6 +124,7 @@ const feedManager_func = {
                     );
                 }
             }
+            handleResize();
         } catch (error) {
             console.error(`Error fetching feeds for ${category}:`, error);
         }
@@ -157,24 +160,25 @@ const feedManager_func = {
 
     startFeedUpdates() {
         this.stopFeedUpdates(); // Stop any existing timer before starting a new one
-    
+
         const checkForUpdates = async () => {
             let url = `/api/fetch/${this.currentCategory}?force_init=True`;
             const data = await this.callFetch(url);
-    
+
             // Check if there are new updates
             const html = data.html;
             const newContentExists = this.checkForNewContent(html);
-    
-            if (newContentExists) {
+
+            if (newContentExists && !this.feedCache[this.currentCategory]) {
+                this.fetchFeeds(this.currentCategory, true, data);
+            } else if (newContentExists) {
                 this.showNotification();
                 this.fetchedFeed = data;
             }
-    
-            // Call the function again after a short delay
-            setTimeout(checkForUpdates, 60000); // Adjust the delay as needed
+
+            setTimeout(checkForUpdates, 600000);
         };
-    
+
         // Start checking for updates
         checkForUpdates();
     },
@@ -233,7 +237,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-let autoFullscreen = true;
 function formatContent(item) {
     let content = item.content;
     const originalLink = item.original_link;
@@ -254,7 +257,7 @@ function formatContent(item) {
         if (videoId) {
             // Check if originalLink contains 'youtube'
             if (originalLink.includes("youtube")) {
-                content = `${initializeYouTubePlayer(
+                content = `${initializePipedPlayer(
                     videoId,
                     originalLink
                 )}${content}`;
@@ -322,23 +325,26 @@ function convertURLsToLinks(tempDiv) {
     });
 }
 
-function initializeYouTubePlayer(videoId, originalLink) {
+function initializePipedPlayer(videoId, originalLink) {
     const iframeContainer = createDivWithClass("iframe-container");
     const responsiveIframe = createDivWithClass("responsive-iframe");
-    responsiveIframe.id = `youtubePlayer-${videoId}`;
-    responsiveIframe.setAttribute("loading", "lazy");
-    iframeContainer.appendChild(responsiveIframe);
+    responsiveIframe.id = `pipedPlayer-${videoId}`;
 
-    fetchSponsoredSegments(videoId, responsiveIframe).then(() => {
-        const player = new YT.Player(responsiveIframe.id, {
-            videoId: videoId,
-            playerVars: {
-                autoplay: 0,
-                controls: 1,
-                showinfo: 1,
-            },
-        });
-    });
+    // Construct the Piped embed URL
+    const pipedEmbedUrl = `https://piped.kavin.rocks/embed/${videoId}`;
+
+    // Set up the iframe element
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('src', pipedEmbedUrl);
+    iframe.setAttribute('width', '560'); // Set the width as needed
+    iframe.setAttribute('height', '315'); // Set the height as needed
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+    iframe.setAttribute('allowfullscreen', true);
+    iframe.setAttribute('loading', 'lazy');
+
+    responsiveIframe.appendChild(iframe);
+    iframeContainer.appendChild(responsiveIframe);
 
     return iframeContainer.outerHTML;
 }
@@ -362,47 +368,6 @@ function handleRedditMedia(originalLink) {
         });
 }
 
-function fetchSponsoredSegments(videoId, youtubePlayer) {
-    console.log(youtubePlayer);
-    const apiUrl = `/api/sponsorblock/${videoId}`;
-
-    return fetch(apiUrl)
-        .then((response) => response.json())
-        .then((data) => {
-            const sponsoredSegments = data.segments;
-            console.log("Segments: ", sponsoredSegments);
-
-            if (sponsoredSegments && sponsoredSegments.length > 0) {
-                const checkInterval = setInterval(() => {
-                    const currentTime = youtubePlayer.getCurrentTime();
-
-                    sponsoredSegments.forEach((segment) => {
-                        if (
-                            currentTime >= segment.start &&
-                            currentTime <= segment.end
-                        ) {
-                            youtubePlayer.seekTo(segment.end);
-                        }
-                    });
-                }, 1000);
-
-                youtubePlayer.addEventListener("onStateChange", (event) => {
-                    if (event.data === YT.PlayerState.ENDED) {
-                        clearInterval(checkInterval);
-                    }
-                });
-
-                return true; // There are sponsor segments
-            } else {
-                return false; // No sponsor segments
-            }
-        })
-        .catch((error) => {
-            console.error("Error fetching sponsored segments:", error);
-            throw error;
-        });
-}
-
 function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
@@ -416,7 +381,6 @@ function exitFullscreen() {
         document.webkitExitFullscreen ||
         document.msExitFullscreen;
     exitFullscreen.call(document);
-    autoFullscreen = true;
 }
 
 // Function to stop the video in the modal
@@ -533,3 +497,140 @@ window.onload = function () {
         changeTheme(savedTheme); // Apply the saved theme
     }
 };
+
+function formatToLocalTime(dateString) {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('default', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(date);
+}
+
+function truncateTagsBasedOnWidth(tagsContainerSelector) {
+    const tagsContainers = document.querySelectorAll(tagsContainerSelector);
+
+    tagsContainers.forEach((container) => {
+        let containerWidth = container.offsetWidth;
+        let currentWidth = 0;
+        let tags = container.querySelectorAll(".badge");
+
+        tags.forEach((tag, index) => {
+            currentWidth += tag.offsetWidth;
+            if (currentWidth > containerWidth && index !== tags.length - 1) {
+                // Create and append ellipsis span
+                let ellipsisSpan = document.createElement("span");
+                ellipsisSpan.className = "badge badge-truncate";
+                ellipsisSpan.textContent = "...";
+                container.appendChild(ellipsisSpan);
+                return; // Exit the loop
+            }
+        });
+    });
+}
+
+function truncateText(textElement, maxHeight) {
+    let text = textElement.innerText;
+    let currentHeight = textElement.offsetHeight;
+
+    if (currentHeight <= maxHeight) {
+        return; // No truncation needed
+    }
+
+    // Estimate the average character height and calculate the approximate overage
+    const avgCharHeight = currentHeight / text.length;
+    const overage = Math.ceil((currentHeight - maxHeight) / avgCharHeight);
+
+    // Remove the estimated overage in characters
+    text = text.slice(0, -overage);
+
+    // Apply the rough truncation
+    textElement.innerText = text.trim() + "...";
+    currentHeight = textElement.offsetHeight;
+
+    // Fine-tune the truncation one character at a time
+    while (currentHeight > maxHeight && text.length > 0) {
+        text = text.slice(0, -1);
+        textElement.innerText = text.trim() + "...";
+        currentHeight = textElement.offsetHeight;
+    }
+}
+
+function calculateBadgesHeight(card) {
+    const badges = card.querySelectorAll('.badge'); // Replace with your actual badge selector
+    let totalHeight = 0;
+    let currentTopOffset = 0;
+    badges.forEach((badge, index) => {
+        if (index === 0 || badge.offsetTop > currentTopOffset) {
+            totalHeight += badge.offsetHeight;
+            currentTopOffset = badge.offsetTop;
+        }
+        const style = window.getComputedStyle(badge);
+        totalHeight += parseInt(style.marginTop) + parseInt(style.marginBottom);
+    });
+    return totalHeight;
+}
+
+function adjustCardSizesAndTruncateText(cardsPerRow, rowsInView) {
+    const cards = Array.from(document.querySelectorAll(".card"));
+    const availableHeightForRows = window.innerHeight;
+    const maxCardHeight = Math.min(650, availableHeightForRows / rowsInView);
+
+    cards.forEach((card) => {
+        const cardContentElements = card.querySelectorAll(
+            ".card-title, .card-creator, .card-pd, .card-footer" // Include .card-footer if that's the class for your footer
+        );
+        let usedHeight = 0;
+
+        cardContentElements.forEach((el) => {
+            usedHeight += el.offsetHeight;
+        });
+
+        const elDate = card.querySelector('.card-pd');
+        const utcDate = elDate.textContent;
+        const localDate = formatToLocalTime(utcDate);
+        elDate.textContent = localDate;
+
+        const imageElement = card.querySelector("img");
+        const imageHeight = imageElement ? imageElement.offsetHeight : 0;
+        usedHeight += imageHeight;
+
+        usedHeight += calculateBadgesHeight(card);
+
+        // Assuming .card-footer is the class for your "View More" footer
+        const footerElement = card.querySelector(".card-footer"); 
+        const footerHeight = footerElement ? footerElement.offsetHeight : 0;
+        usedHeight += footerHeight;
+
+        const cardTextElement = card.querySelector(".card-text");
+        if (cardTextElement) {
+            const padding =
+                parseInt(getComputedStyle(cardTextElement).paddingTop) +
+                parseInt(getComputedStyle(cardTextElement).paddingBottom);
+            const textMaxHeight =
+                maxCardHeight - usedHeight - padding - 20; // Adjust the 20px if more or less space is needed
+            truncateText(cardTextElement, textMaxHeight);
+        }
+    });
+}
+
+function handleResize() {
+    let cardsPerRow = 4;
+    let rowsInView = 2;
+    if (window.innerWidth < 1200 && window.innerWidth >= 768) {
+        cardsPerRow = 2;
+        rowsInView = 1; // Adjust rows in view if the screen is medium size
+    } else {
+        cardsPerRow = 1;
+        rowsInView = 1;
+    }
+
+    adjustCardSizesAndTruncateText(cardsPerRow, rowsInView);
+}
+
+document.addEventListener("DOMContentLoaded", () => handleResize());
+window.addEventListener("load", () => handleResize());
+window.addEventListener("resize", () => handleResize());

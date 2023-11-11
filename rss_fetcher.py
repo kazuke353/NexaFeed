@@ -3,6 +3,7 @@ import json
 import pytz
 import tldextract
 import traceback
+from rapidfuzz import fuzz
 from aiohttp import ClientSession, TCPConnector
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
@@ -11,7 +12,7 @@ from user_agent import generate_user_agent
 from media_fetcher import fetch_media
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 def get_website_name(url):
     try:
@@ -24,6 +25,30 @@ def get_website_name(url):
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+    
+
+def select_title(feed_title, creator, website_name):
+    # If feed title and creator are the same, discard the feed title.
+    if feed_title == creator:
+        feed_title = None
+    
+    # Prepare a list to hold the titles
+    titles = []
+
+    # If the website name is valid, add it first
+    if website_name:
+        titles.append(website_name)
+
+    # Check if feed title and website name are similar
+    if feed_title:
+        if not is_close(feed_title, website_name):
+            # If not similar, add feed_title after website_name
+            titles.append(feed_title)
+    
+    return titles
+
+def is_close(str1, str2, threshold=80):  # Note: threshold is 0-100
+    return fuzz.ratio(str1.lower(), str2.lower()) > threshold
 
 class RSSFetcher:
     BASE_QUERY = "SELECT * FROM feed_entries"
@@ -160,7 +185,8 @@ class RSSFetcher:
         if search_query:
             where_clause += """
                 WHERE (similarity(title, $2) > $3 OR similarity(content, $2) > $3 
-                OR similarity(additional_info->>'creator', $2) > $3)
+                OR similarity(additional_info->>'creator', $2) > $3) 
+                OR url ILIKE $2
             """
             parameters.extend([search_query, threshold])
 
@@ -192,59 +218,49 @@ class RSSFetcher:
         return processed_entries, last_id, last_pd
 
     async def process_row_entry(self, entry):
-        published_date = None
-
-        date_str = entry.get('published_date', None)
-        if date_str:
-            published_date = self.parse_date(date_str)
-
-        if published_date is None:
-            published_date = datetime.min.replace(tzinfo=timezone.utc)
+        # Use a dictionary comprehension to extract the fields and use .get() to provide defaults
+        entry_fields = {field: entry.get(field, None) for field in ('id', 'title', 'content', 'summary', 'thumbnail', 'video_id', 'original_link', 'url')}
         
+        # Parse the published date or use the minimum datetime if not available
+        entry_fields['published_date'] = self.parse_date(entry.get('published_date')) if entry.get('published_date') else datetime.min.replace(tzinfo=timezone.utc)
+
+        # Attempt to load additional_info or set to None if any JSONDecodeError occurs
         try:
-            additional_info = json.loads(entry.get('additional_info', None))
+            entry_fields['additional_info'] = json.loads(entry.get('additional_info', '{}'))
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON: {e}")
-            additional_info = None
+            entry_fields['additional_info'] = None
 
-        return {
-            'id': entry['id'],
-            'title': entry['title'],
-            'content': entry['content'],
-            'summary': entry['summary'],
-            'thumbnail': entry['thumbnail'],
-            'video_id': entry['video_id'],
-            'additional_info': additional_info,
-            'published_date': published_date,
-            'original_link': entry['original_link'],
-            'url': entry['url']
-        }
+        return entry_fields
     
-    async def process_entry(self, entry, url, feed_title=None):
-        original_link = getattr(entry, 'link', '')
-        published_date = None
+    async def process_entry(self, entry, url, feed_title_raw=None):
+        # Directly use dict.get for attributes that are dicts
+        original_link = entry.get('link', '')
 
-        for attr in self.date_attributes:
-            date_str = getattr(entry, attr, None)
-            if date_str:
-                published_date = self.parse_date(date_str)
-                if published_date:
-                    break
+        # Initialize published_date
+        published_date = self.get_published_date(entry)
 
-        if published_date is None:
-            # Log a warning and default to datetime.min with timezone set to UTC
+        # If there is no valid published date, log a warning and skip processing this entry
+        if not published_date:
             logging.warning(f"No valid published date for entry in {original_link}")
-            return {}
+            return None, None  # Return None values instead of empty dict and date
 
+        # Fetch media information from entry
         tree, summary, thumbnail, video_id, additional_info = fetch_media(entry)
-        title = getattr(entry, 'title', '')
-        summary = tree.text_content()[:100] if tree is not None else summary
-        content = getattr(entry, 'content', [{}])[0].get('value', summary)
-        additional_info['web_name'] = feed_title
+        
+        # Use summary from content if available, fallback to the fetched summary, and limit to 100 characters
+        summary = tree.text_content() if tree is not None else summary
+        content = entry.get('content', [{}])[0].get('value', summary)
 
+        creator = additional_info.get('creator', '')
+        website_name = get_website_name(url)
+
+        additional_info['web_name'] = select_title(feed_title_raw, creator, website_name)
+
+        # Build the processed entry dict
         processed_entry = {
             'url': url,
-            'title': title,
+            'title': entry.get('title', ''),
             'content': content,
             'summary': summary,
             'thumbnail': thumbnail,
@@ -253,8 +269,19 @@ class RSSFetcher:
             'published_date': published_date,
             'original_link': original_link
         }
-    
-        return processed_entry, processed_entry.get('published_date')
+
+        return processed_entry, published_date
+
+    def get_published_date(self, entry):
+        for attr in self.date_attributes:
+            date_str = getattr(entry, attr, None)
+            if date_str:
+                published_date = self.parse_date(date_str)
+                if published_date:
+                    return published_date
+        
+        logging.warning("No valid published date found in entry.")
+        return datetime.min.replace(tzinfo=timezone.utc)
 
     async def fetch_single_feed(self, url):
         latest_entry, latest_date, latest_etag, latest_content_len = None, None, None, None
@@ -292,13 +319,13 @@ class RSSFetcher:
                         print(url, " returned status: ", feed_status_code)
                         return [], [], feed_status_code
 
-                    feed_title = feed.feed.get('title', None) or get_website_name(url)
+                    feed_title_raw = feed.feed.get('title', None)
                     # Store the new ETag from the response for next request
                     new_etag = response.headers.get("ETag")
 
                     # Process entries and collect published dates concurrently
                     processed_entries_and_dates = await asyncio.gather(
-                        *(self.process_entry(entry, url, feed_title) for entry in feed.entries)
+                        *(self.process_entry(entry, url, feed_title_raw) for entry in feed.entries)
                     )
 
                     processed_entries = []

@@ -240,7 +240,7 @@ async def setup_postgresql():
         print(f"PostgreSQL connection failed: {e}")
 
 # Check if PostgreSQL connection is successful and perform setup
-async def run_setup():  # Make the run_setup() function an async function
+async def run_setup():
     await setup_postgresql()
 
-asyncio.run(run_setup())  # Call the run_setup() function using asyncio.run()
+asyncio.run(run_setup())

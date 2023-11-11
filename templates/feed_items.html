@@ -1,6 +1,8 @@
 {% for item in feed_items %}
-<div class="col-12 col-md-6 col-lg-4 col-xl-3 d-flex pb-3">
-  <div class="feed-card card mb-3 shadow-sm flex-fill" x-data='{
+<div class="col-12 col-md-6 col-lg-5 col-xl-3 d-flex pb-3">
+    <div
+        class="feed-card card mb-3 shadow-sm flex-fill"
+        x-data='{
       "open": false,
       "contentFormatted": false,
       "item": {{ item|tojson|safe }},
@@ -25,49 +27,86 @@
               document.body.classList.remove("no-scroll");
           }
       }
-    }' @click.stop="openModal">
-    <!-- Modal Trigger -->
-    <img class="card-img-top thumbnail mr-3" src="{{ item.thumbnail }}" alt="" loading="lazy"
-      @click.stop="openModal">
-    <div class="card-trigger p-3" @click.stop="openModal">
-      <div class="d-flex align-items-center justify-content-between">
-        <div>
-          <h5 class="card-title mb-0">{{ item.title }}</h5>
-          <span class="text-primary font-weight-bold creator-indent">by {{ item.additional_info.creator }}</span>
-          <br>
-          <span class="font-weight-bold creator-indent">{{ item.published_date }}</span>
+    }'
+        @click.stop="openModal"
+    >
+        <!-- Modal Trigger -->
+        <img
+            class="card-img-top thumbnail mr-3"
+            src="{{ item.thumbnail }}"
+            alt=""
+            loading="lazy"
+            @click.stop="openModal"
+        />
+        <div class="card-trigger p-3" @click.stop="openModal">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="card-title mb-0">{{ item.title }}</h5>
+                    <span class="card-creator text-primary font-weight-bold creator-indent"
+                        >by {{ item.additional_info.creator }}</span
+                    >
+                    <br />
+                    <span class="card-pd font-weight-bold creator-indent"
+                        >{{ item.published_date }}</span
+                    >
+                </div>
+            </div>
+            <hr class="card-separator" />
+            <p class="card-text">{{ item.summary }}</p>
         </div>
-      </div>
-      <hr class="card-separator">
-      <div class="card-info mt-2 mb-2">
-        <span class="badge bg-primary">{{ item.additional_info.web_name }}</span>
-        {% for tag in item.additional_info.tags %}
-        <span class="badge bg-secondary">{{ tag }}</span>
-        {% endfor %}
-      </div>
-      <p class="card-text" loading="lazy">{{ item.summary }}</p>
-    </div>
-    <footer class="card-footer d-flex align-items-center" @click.stop="openModal">
-      <h5 class="card-title mb-0">View More</h5>
-      <i class="fas fa-chevron-right"></i>
-    </footer>
-    <!-- Modal Content -->
-    <div x-show="open" class="modal-dialog modal-dialog-centered" style="z-index: 2000; position: relative;"
-      @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <div class="d-flex justify-content-between align-items-center w-100"> <!-- Flex container for title and date -->
-            <h5 class="modal-title" x-text="item.title"></h5>
-            <small class="text-muted">{{ item.published_date }}</small> <!-- Published Date here -->
-          </div>
+        <div class="card-trigger p-3 align-items-center">
+            <div class="card-info mt-2 mb-2">
+                {% for tag_type, badge_class in [('web_name', 'bg-primary'), ('tags', 'bg-secondary')] %}
+                    {% for tag in item.additional_info.get(tag_type, []) %}
+                        <span class="badge {{ badge_class }} badge-truncate">{{ tag }}</span>
+                    {% endfor %}
+                {% endfor %}
+            </div>
         </div>
-        <hr class="card-separator">
-        <div class="modal-body" x-html="formattedContent" loading="lazy"></div>
-        <footer class="modal-footer d-flex align-items-center justify-content-center" @click="closeModal">
-          <button type="button" class="btn-close wide-close-button"></button>
+        <footer
+            class="card-footer d-flex align-items-center"
+            @click.stop="openModal"
+        >
+            <h5 class="card-title mb-0">View More</h5>
+            <i class="fas fa-chevron-right"></i>
         </footer>
-      </div>
+        <!-- Modal Content -->
+        <div
+            x-show="open"
+            class="modal-dialog modal-dialog-centered"
+            style="z-index: 2000; position: relative"
+            @click="closeModal"
+        >
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <div
+                        class="d-flex justify-content-between align-items-center w-100"
+                    >
+                        <!-- Flex container for title and date -->
+                        <h5 class="modal-title" x-text="item.title"></h5>
+                        <small class="text-muted"
+                            >{{ item.published_date }}</small
+                        >
+                        <!-- Published Date here -->
+                    </div>
+                </div>
+                <hr class="card-separator" />
+                <div
+                    class="modal-body"
+                    x-html="formattedContent"
+                    loading="lazy"
+                ></div>
+                <footer
+                    class="modal-footer d-flex align-items-center justify-content-center"
+                    @click="closeModal"
+                >
+                    <button
+                        type="button"
+                        class="btn-close wide-close-button"
+                    ></button>
+                </footer>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 {% endfor %}

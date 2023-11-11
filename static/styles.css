@@ -14,7 +14,7 @@
 }
 
 body {
-    font-family: 'Helvetica Neue', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--bs-body-font-family);
     margin: 0;
     background: var(--background-color);
     color: var(--text-color);
@@ -226,6 +226,23 @@ body {
 .no-scroll {
     overflow: hidden;
     height: 100%
+}
+
+.card {
+    position: relative;
+    box-sizing: border-box;
+}
+
+.card-text {
+    overflow: hidden;
+}
+
+.badge-truncate {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #notification {
