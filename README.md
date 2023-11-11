@@ -9,7 +9,7 @@
 - [Why I Started NexaFeed](#why-i-started-nexafeed)
 - [Introduction](#introduction)
 - [Features](#features)
-- [Tech Stack](#tech-stack-)
+- [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -55,7 +55,7 @@ NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with
 
 Experience the future of feed reading with NexaFeed – Your gateway to organized, efficient, and enjoyable content consumption.
 
-## Tech Stack 🛠️
+<h2 id="tech-stack">Tech Stack 🛠️</h2>
 
 ### Backend
 - Python: The core programming language for server-side logic.
