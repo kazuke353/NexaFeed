@@ -42,6 +42,7 @@ NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with
 
 ## NexaFeed: Streamlined and Powerful Web-based RSS Feed Reader
 
+<a id="features"></a>
 ### Key Features
 
 - **YouTube Integration**: Effortlessly watch YouTube videos directly within NexaFeed.
@@ -55,7 +56,8 @@ NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with
 
 Experience the future of feed reading with NexaFeed – Your gateway to organized, efficient, and enjoyable content consumption.
 
-<h2 id="tech-stack">Tech Stack 🛠️</h2>
+<a id="tech-stack"></a>
+## Tech Stack 🛠️
 
 ### Backend
 - Python: The core programming language for server-side logic.
