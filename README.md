@@ -66,7 +66,6 @@ Experience the future of feed reading with NexaFeed – Your gateway to organize
 - pyngrok: Tool to expose local servers to the public internet securely.
 - cachetools: Caching mechanisms for Python functions.
 - python-dateutil: Library for parsing and manipulating dates and times.
-- requests: Library for making HTTP requests.
 - user_agent: Library for parsing and generating user agent strings.
 - lxml: Library for XML and HTML parsing.
 - aiohttp: Library for asynchronous HTTP requests in Python.
