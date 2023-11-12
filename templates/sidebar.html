@@ -1,0 +1,61 @@
+<div id="sidebar" class="bg-light border-right">
+    <!-- Add category button -->
+    <button class="btn btn-light border-0 rounded-circle" @click="addCategory">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Category list -->
+    <ul class="list-unstyled ps-0" x-show="$store.sharedState.categories.length > 0">
+        <template x-for="category in $store.sharedState.categories" :key="category.id">
+            <li class="mb-1">
+                <!-- Category name -->
+                <button
+                    class="btn btn-toggle align-items-center rounded collapsed"
+                    @click="category.expanded = !category.expanded; fetchFeeds(category)"
+                >
+                    <i class="fas" :class="{'fa-chevron-down': category.expanded, 'fa-chevron-right': !category.expanded}"></i>
+                    <span x-text="category.name"></span>
+                    <i class="fas fa-times" @click.stop="removeCategory(category)"></i>
+                </button>
+
+                <!-- Feed list -->
+                <div x-show="category.expanded">
+                    <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                        <!-- Add feed button -->
+                        <li>
+                            <button class="btn btn-light border-0 rounded-circle" @click="addFeed(category)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </li>
+                        <!-- Import OPML button -->
+                        <li>
+                            <button class="btn btn-light border-0 rounded-circle" @click="importOPML(category)">
+                                <i class="fas fa-file-upload"></i>
+                            </button>
+                        </li>
+                        <div x-show="!category.feeds">
+                            <p>Loading feeds...</p> <!-- Placeholder or loading indicator -->
+                        </div>
+                        <div x-show="category.feeds && category.feeds.length > 0">
+                            <li class="mb-1">
+                                <a class="link-dark rounded" x-on:click="goBack(category.id)">
+                                  <i class="fas fa-rss"></i>
+                                  <span>All Feeds</span>
+                                </a>
+                            </li>
+                          <template x-for="feed in category.feeds" :key="feed.id">
+                            <li class="mb-1">
+                              <a class="link-dark rounded" x-on:click="search(feed.url, category.id)">
+                                <i class="fas fa-rss"></i>
+                                <span x-text="feed.name"></span>
+                                <i class="fas fa-times" x-on:click.stop="removeFeed(category, feed)"></i>
+                              </a>
+                            </li>
+                          </template>
+                        </div>
+                    </ul>
+                </div>
+            </li>
+        </template>
+    </ul>
+</div>

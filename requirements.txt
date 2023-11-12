@@ -4,7 +4,6 @@ aiohttp
 
 # URL and HTTP related
 tldextract
-requests
 user_agent
 pyngrok
 lxml

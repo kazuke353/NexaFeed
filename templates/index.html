@@ -1,96 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+            charset="UTF-8"
+        />
+        <title>NexaFeed</title>
 
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
-  <title>NexaFeed</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
+        <!-- Favicon for Light Theme -->
+        <link rel="icon" href="{{ url_for('static', filename='icons/favicon-light.ico') }}" media="(prefers-color-scheme: light)">
 
-<body>
-  <div x-data="feedManager()" x-init="startFetch()">
-    <nav id="navbar" class="navbar navbar-expand-md sticky-top mb-5"
-      x-data="{ open: false, theme: 'light', changeTheme: window.changeTheme }"
-      style="z-index: 1000;"
-      :class="{ 'navbar-light': theme === 'light', 'navbar-dark': theme !== 'light' }"
-      x-init="$watch('theme', value => changeTheme(value))">
-      <div class="container-fluid d-flex justify-content-between">
-        <button @click="open = !open" class="navbar-toggler" type="button">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div :class="{'show': open}" class="collapse navbar-collapse" id="navbarNav">
-          <!-- Category Div: Left -->
-          <div class="d-flex align-items-center">
-            <a href="https://aniwave.to/user/watch-list?folder=1&keyword=&sort=recently_updated" target="_blank"
-              class="btn btn-outline-light ml-2">
-              <img src="https://s2.bunnycdn.ru/assets/sites/aniwave/favicon1.png" alt="Aniwave"
-                style="width: 20px; height: 20px;">
-            </a>
-            <a href="https://myanimelist.net/anime/season" target="_blank" class="btn btn-outline-light ml-2">
-              <img src="https://cdn.myanimelist.net/images/favicon.ico" alt="MyAnimeList"
-                style="width: 20px; height: 20px;">
-            </a>
-            <a href="https://discord.com/app" target="_blank" class="btn btn-outline-light ml-2">
-              <img src="https://discord.com/assets/images/favicon.ico" alt="Discord"
-                style="width: 20px; height: 20px;">
-            </a>
-            <a href="https://chat.openai.com/" target="_blank" class="btn btn-outline-light ml-2">
-              <img src="https://cdn.oaistatic.com/_next/static/media/favicon-32x32.be48395e.png" alt="ChatGPT"
-                style="width: 20px; height: 20px;">
-            </a>
-          </div>
+        <!-- Favicon for Dark Theme -->
+        <link rel="icon" href="{{ url_for('static', filename='icons/favicon-dark.ico') }}" media="(prefers-color-scheme: dark)">
 
-          <!-- Search: Center -->
-          <div class="d-flex justify-content-center align-items-center mx-auto">
-            <input type="text" id="search-box" placeholder="Search..." class="form-control">
-            <button id="search-button" class="btn btn-outline ml-2" x-on:click="search">
-              <i class="fas fa-search"></i>
-            </button>
-          </div>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='styles.css') }}"
+        />
+    </head>
 
-          <!-- Right Items: Right -->
-          <div class="d-flex align-items-center">
-            <div class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle btn btn-outline ml-2" href="#" role="button"
-                 id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                Theme
-              </a>
-              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="themeDropdown">
-                <a class="dropdown-item" href="#" @click.prevent="theme = 'light'">Light</a>
-                <a class="dropdown-item" href="#" @click.prevent="theme = 'dark'">Dark</a>
-                <a class="dropdown-item" href="#" @click.prevent="theme = 'latte'">🌻 Latte</a>
-                <a class="dropdown-item" href="#" @click.prevent="theme = 'frappe'">🪴 Frappé</a>
-                <a class="dropdown-item" href="#" @click.prevent="theme = 'macchiato'">🌺 Macchiato</a>
-                <a class="dropdown-item" href="#" @click.prevent="theme = 'mocha'">🌿 Mocha</a>
-              </div>
+    <body x-data="sharedData()" x-init="init()">
+        <div id="main-container" class="d-flex flex-column" x-data="feedManager()">
+            {% include 'navbar.html' %}
+            <div id="notification" class="alert alert-info d-none" role="alert">
+                <i class="fas fa-bell"></i>
+                New feeds available! Click to reset and load the new feeds.
             </div>
-            <button id="refresh-button" class="btn btn-outline-light ml-2">
-              <i class="fas fa-sync-alt"></i>
-            </button>
-          </div>
+            <!-- Main Content Area -->
+            <div class="d-flex flex-row flex-grow-1">
+                <div id="sidebar-container" class="col-md-1" x-data="sidebarManager()">
+                    {% include 'sidebar.html' %}
+                </div>
+                <div id="feed-container" class="w-100 container-fluid" x-init="initFeed()">
+                    <div id="feed-container-inner" class="row feed-container" @scroll.window="handleScroll">
+                        {% include 'feed.html' %}
+                    </div>
+                    <div
+                        id="spinner"
+                        class="page-load-status d-flex justify-content-center"
+                        style="display: none"
+                        role="status"
+                    >
+                        <div
+                            x-show="loading"
+                            class="spinner-border text-primary"
+                            role="status"
+                        ></div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </nav>
-    <div id="notification" class="alert alert-info d-none" role="alert">
-        <i class="fas fa-bell"></i>
-        New feeds available! Click to reset and load the new feeds.
-    </div>
-    <div class="container container-md mt-auto">
-      <div class="row feed-container" @scroll.window="handleScroll">
-        <!-- Load feeds here from feed_items.html -->
-      </div>
-    </div>
-  </div>
-  <div id="spinner" class="page-load-status d-flex justify-content-center" style="display:none;" role="status">
-    <div x-show="loading" class="spinner-border text-primary" role="status"></div>
-    <br>
-    <span class="loader">Loading...</span>
-  </div>
-  <script src="{{ url_for('static', filename='scripts.js') }}"></script>
-  <script src="{{ url_for('static', filename='alpine.min.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
-</body>
-
+        <script
+            src="{{ url_for('static', filename='alpine.min.js') }}"
+            defer
+        ></script>
+        <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+        <script src="{{ url_for('static', filename='shared.js') }}"></script>
+        <script src="{{ url_for('static', filename='feed.js') }}"></script>
+        <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
+        <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    </body>
 </html>

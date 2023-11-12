@@ -1,0 +1,96 @@
+<template
+    x-show="$store.sharedState.feed_items.length > 0"
+    x-for="item in $store.sharedState.feed_items"
+    :key="item.id"
+>
+    <div class="col-12 col-md-6 col-lg-5 col-xl-3 d-flex pb-3">
+        <div class="feed-card card mb-3 shadow-sm flex-fill" @click.stop="openModal(item)">
+            <img
+                class="card-img-top thumbnail mr-3"
+                :src="item.thumbnail"
+                alt=""
+                loading="lazy"
+            />
+            <div class="card-trigger p-3">
+                <div
+                    class="d-flex align-items-center justify-content-between"
+                >
+                    <div>
+                        <h5
+                            class="card-title mb-0"
+                            x-text="item.title"
+                        ></h5>
+                        <span
+                            class="card-creator text-primary font-weight-bold creator-indent"
+                            x-text="'by ' + item.additional_info.creator"
+                        ></span>
+                        <br />
+                        <span
+                            class="card-pd font-weight-bold creator-indent"
+                            x-text="item.published_date"
+                        ></span>
+                    </div>
+                </div>
+                <hr class="card-separator" />
+                <p class="card-text" x-text="item.summary"></p>
+            </div>
+            <div class="card-trigger p-3 align-items-center">
+                <div class="card-info mt-2 mb-2">
+                    <template x-for="web_name in item.additional_info.web_name">
+                        <span
+                            class="badge bg-primary badge-truncate"
+                            x-text="web_name"
+                        ></span>
+                    </template>
+                    <template x-for="tag in item.additional_info.tags">
+                        <span
+                            class="badge bg-secondary badge-truncate"
+                            x-text="tag"
+                        ></span>
+                    </template>
+                </div>
+            </div>
+            <footer
+                class="card-footer d-flex align-items-center"
+                @click.stop="openModal"
+            >
+                <h5 class="card-title mb-0">View More</h5>
+                <i class="fas fa-chevron-right"></i>
+            </footer>
+            <div
+                x-show="item.open"
+                class="modal-dialog modal-dialog-centered"
+                style="z-index: 2000; position: relative"
+            >
+                <div class="modal-content" @click.stop>
+                    <div class="modal-header">
+                        <div
+                            class="d-flex justify-content-between align-items-center w-100"
+                        >
+                            <h5 class="modal-title" x-text="item.title"></h5>
+                            <small
+                                class="card-pd font-weight-bold"
+                                x-text="item.published_date"
+                            ></small>
+                        </div>
+                    </div>
+                    <hr class="card-separator" />
+                    <div
+                        class="modal-body"
+                        x-html="item.formattedContent"
+                    ></div>
+                    <footer
+                        class="modal-footer d-flex align-items-center justify-content-center"
+                        @click="closeModal(item)"
+                    >
+                        <button
+                            type="button"
+                            class="btn-close wide-close-button"
+                            @click="closeModal(item)"
+                        ></button>
+                    </footer>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

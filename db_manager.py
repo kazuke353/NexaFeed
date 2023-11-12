@@ -28,16 +28,38 @@ async def drop_table(table_name=None):
                     """)
                 else:  # If no table name is provided, drop all tables listed
                     await conn.execute("""
-                        DROP TABLE IF EXISTS feed_entries;
-                    """)
+                                       DROP TABLE IF EXISTS feed_entries;
+                                       """)
                     await conn.execute("""
-                        DROP TABLE IF EXISTS feed_metadata;
-                    """)
+                                       DROP TABLE IF EXISTS feed_metadata;
+                                       """)
+                    await conn.execute("""
+                                       DROP TABLE IF EXISTS feeds;
+                                       """)
+                    await conn.execute("""
+                                       DROP TABLE IF EXISTS categories;
+                                       """)
 
 async def create_tables():
     async with asyncpg.create_pool(DATABASE_URL) as pool:
         async with pool.acquire() as conn:
             async with conn.transaction():
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS categories (
+                        id SERIAL PRIMARY KEY,
+                        name TEXT
+                    )
+                """)
+                
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS feeds (
+                        id SERIAL PRIMARY KEY,
+                        name TEXT,
+                        url TEXT,
+                        category_id INTEGER REFERENCES categories(id)
+                    )
+                """)
+
                 # Create table for feed metadata
                 await conn.execute("""
                     CREATE TABLE IF NOT EXISTS feed_metadata (
@@ -49,10 +71,12 @@ async def create_tables():
                         last_checked TIMESTAMP WITH TIME ZONE DEFAULT now()
                     )
                 """)
+
                 await conn.execute("""
                     CREATE TABLE IF NOT EXISTS feed_entries (
                         id BIGSERIAL PRIMARY KEY,
                         original_link TEXT UNIQUE,
+                        category_id INTEGER REFERENCES categories(id),
                         title TEXT,
                         content TEXT,
                         summary TEXT,
@@ -117,6 +141,74 @@ class DBManager:
             await self.session.close()
             await self.engine.close()
             await self.engine.wait_closed()
+
+    async def select_data(self, table_name, condition=None):
+        pool = await self.get_pool()
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                values = []
+                order_clause = ""
+                limit_clause = ""
+                custom_where_clause = ""
+                standard_where_clause = ""
+                standard_where_parts = []
+
+                if condition:
+                    # Extract and handle special parameters from condition
+                    limit = condition.pop('limit', None)
+                    order_by = condition.pop('order_by', None)
+                    custom_where = condition.pop('WHERE', None)
+                    custom_values = condition.pop('VALUES', [])
+
+                    # Process standard conditions
+                    for key, value in condition.items():
+                        if isinstance(value, list) and len(value) == 2:
+                            # Handling conditions in the format {"column": ["operator", "value"]}
+                            standard_where_parts.append(f"{key} {value[0]} ${len(values) + 1}")
+                            values.append(value[1])
+                        else:
+                            # Handling simple equality conditions
+                            standard_where_parts.append(f"{key} = ${len(values) + 1}")
+                            values.append(value)
+
+                    standard_where_clause = ' AND '.join(standard_where_parts)
+                    if standard_where_clause:
+                        standard_where_clause = f"WHERE {standard_where_clause}"
+
+                    # Construct custom WHERE clause
+                    if custom_where:
+                        # Append custom WHERE clause, ensuring to add AND if standard conditions exist
+                        custom_where_clause = f"{' AND' if 'WHERE' in standard_where_clause else ' WHERE'}{custom_where}"
+                        values.extend(custom_values)
+
+                    if order_by:
+                        order_clause = f"ORDER BY {order_by}"
+
+                    limit_clause = f"LIMIT {limit}" if limit is not False or limit is not None else ""
+
+                query = f"""
+                    SELECT json_agg(t) 
+                    FROM (SELECT * FROM {table_name} 
+                    {standard_where_clause}
+                    {custom_where_clause}
+                    {order_clause}
+                    {limit_clause}) t
+                """
+                print(query)
+                record = await conn.fetchval(query, *values)
+                if record:
+                    record = json.loads(str(record))
+
+                return record
+
+    async def delete_data(self, table_name, condition):
+        pool = await self.get_pool()
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                # Build the WHERE clause with the provided condition
+                where_clause = ' AND '.join(f"{k} = ${i+1}" for i, (k, v) in enumerate(condition.items()))
+                query = f"DELETE FROM {table_name} WHERE {where_clause}"
+                await conn.execute(query, *condition.values())
 
     async def insert_data(self, pool, table_name, data, on_conflict_action="DO NOTHING", conflict_target=None, update_columns=None):
         # Serialize any JSON fields if necessary
@@ -226,6 +318,8 @@ async def setup_postgresql():
                 print(f"Database '{DB_NAME}' created.")
 
         #await drop_table()
+        #await drop_table("feeds")
+        #await drop_table("categories")
         await create_tables()
         #await drop_columns_from_table(pool, "feed_entries", ['etag'])
 

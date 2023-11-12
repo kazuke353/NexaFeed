@@ -11,6 +11,16 @@
     --text-color: #333;
     --border-color-1: #ccc;
     --border-color-2: #e6e6e6;
+    --body-color: var(--text-color);
+    --body-bg: var(--background-color);
+    --primary: var(--primary-color);
+    --secondary: var(--secondary-color);
+    --light: var(--secondary-bg-color);
+    --dark: var(--text-color);
+    --success: var(--highlight-color);
+    --info: var(--link-color);
+    --warning: var(--accent-color);
+    --danger: var(--accent-color);
 }
 
 body {
@@ -133,11 +143,6 @@ body {
     }
 }
 
-#navbar {
-    background-color: var(--background-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 .navbar-brand,
 .nav-link,
 .navbar-toggler-icon,
@@ -249,10 +254,48 @@ body {
     position: fixed;
     top: 10px;
     right: 10px;
-    z-index: 1000;
+    z-index: 1021;
     cursor: pointer;
 }
 
 #notification i {
     margin-right: 5px;
+}
+
+/* Navbar */
+#navbar {
+    z-index: 1020; /* Higher than other elements */
+    background-color: var(--background-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Main Flex Container */
+#main-container {
+    position: sticky;
+    max-height: 100vh;
+    max-width: 100%;
+    overflow: scroll;
+    margin: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0;
+    padding-left: 1%;
+    padding-right: 1%;
+}
+
+/* Sidebar */
+#sidebar-container {
+    max-height: calc(100vh - var(--navbar-height));
+    max-width: 100%;
+    overflow: scroll;
+}
+
+/* Feed Container */
+#feed-container {
+    max-height: calc(100vh - var(--navbar-height));
+    max-width: 100%;
+    overflow: scroll;
+    flex-grow: 1; /* Takes the remaining space */
 }

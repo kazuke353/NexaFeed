@@ -173,67 +173,30 @@ class RSSFetcher:
             print(f"Error parsing date '{date_str}': {e}")  # Debug print
             return None
     
-    async def get_feed(self, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.3):
+    async def get_feed(self, category, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.3):
         print(f"Fetching feed with limit {limit}")
-        pool = await self.db_manager.get_pool()
-        parameters = [int(limit)]
 
-        # Initialize the where_clause as an empty string
-        where_clause = ""
+        condition = {
+            "limit": int(limit),
+            "order_by": "published_date DESC, id DESC",
+            "category_id": int(category)
+        }
+
+
+        # Add pagination conditions if last_id and last_pd are provided
+        if last_id is not None and last_pd is not None:
+            condition["published_date"] = ["<", self.parse_date(last_pd)]
+            condition["id"] = ["<", int(last_id)]
 
         # If a search query is provided, add to the WHERE clause
         if search_query:
-            where_clause += """
-                WHERE (similarity(title, $2) > $3 OR similarity(content, $2) > $3 
-                OR similarity(additional_info->>'creator', $2) > $3) 
-                OR url ILIKE $2
-            """
-            parameters.extend([search_query, threshold])
+            condition["WHERE"] = "((similarity(title, $3) > $4 OR similarity(content, $3) > $4 OR similarity(additional_info->>'creator', $3) > $4) OR url ILIKE $3)"
+            condition["VALUES"] = [search_query, threshold]
 
-        # If pagination parameters exist, append them to the WHERE clause
-        if last_pd and last_id:
-            # If a search query already exists, add AND otherwise WHERE
-            where_clause += f"{' AND' if 'WHERE' in where_clause else ' WHERE'} (published_date, id) < (${'4' if search_query else '2'}, ${'5' if search_query else '3'})"
-            parameters.extend([self.parse_date(last_pd), int(last_id)])
-
-        query = f"{self.BASE_QUERY} {where_clause} {self.ORDER_AND_LIMIT}"
-
-        # Make sure parameters are in the correct order and the correct amount
-        expected_param_count = 1 + (2 if search_query else 0) + (2 if last_pd and last_id else 0)
-        assert len(parameters) == expected_param_count, f"Expected {expected_param_count} parameters, got {len(parameters)}"
-
-        async with pool.acquire() as connection:
-            feeds = await connection.fetch(query, *parameters)
-
-        # Process entries
-        processed_entries = await asyncio.gather(
-            *(self.process_row_entry(entry) for entry in feeds)
-        )
-
-        # Update the last_id and last_pd for pagination if we have entries
-        if processed_entries:
-            last_entry = processed_entries[-1]
-            last_id, last_pd = last_entry.get('id'), last_entry.get('published_date')
-
-        return processed_entries, last_id, last_pd
-
-    async def process_row_entry(self, entry):
-        # Use a dictionary comprehension to extract the fields and use .get() to provide defaults
-        entry_fields = {field: entry.get(field, None) for field in ('id', 'title', 'content', 'summary', 'thumbnail', 'video_id', 'original_link', 'url')}
-        
-        # Parse the published date or use the minimum datetime if not available
-        entry_fields['published_date'] = self.parse_date(entry.get('published_date')) if entry.get('published_date') else datetime.min.replace(tzinfo=timezone.utc)
-
-        # Attempt to load additional_info or set to None if any JSONDecodeError occurs
-        try:
-            entry_fields['additional_info'] = json.loads(entry.get('additional_info', '{}'))
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            entry_fields['additional_info'] = None
-
-        return entry_fields
+        feeds = await self.db_manager.select_data("feed_entries", condition)
+        return feeds
     
-    async def process_entry(self, entry, url, feed_title_raw=None):
+    async def process_entry(self, category, entry, url, feed_title_raw=None):
         # Directly use dict.get for attributes that are dicts
         original_link = entry.get('link', '')
 
@@ -260,6 +223,7 @@ class RSSFetcher:
         # Build the processed entry dict
         processed_entry = {
             'url': url,
+            'category_id': category,
             'title': entry.get('title', ''),
             'content': content,
             'summary': summary,
@@ -283,7 +247,7 @@ class RSSFetcher:
         logging.warning("No valid published date found in entry.")
         return datetime.min.replace(tzinfo=timezone.utc)
 
-    async def fetch_single_feed(self, url):
+    async def fetch_single_feed(self, category, url):
         latest_entry, latest_date, latest_etag, latest_content_len = None, None, None, None
         if url in self.feed_metadata:
             latest_entry = self.feed_metadata[url]
@@ -325,7 +289,7 @@ class RSSFetcher:
 
                     # Process entries and collect published dates concurrently
                     processed_entries_and_dates = await asyncio.gather(
-                        *(self.process_entry(entry, url, feed_title_raw) for entry in feed.entries)
+                        *(self.process_entry(entry, category, url, feed_title_raw) for entry in feed.entries)
                     )
 
                     processed_entries = []
@@ -353,7 +317,7 @@ class RSSFetcher:
                 logging.error(f"An error occurred while fetching {url}: {e}\n{traceback.format_exc()}")
                 return [], [], 443
     
-    async def fetch_feeds(self, urls, pool):
+    async def fetch_feeds(self, category, urls, pool):
         if not urls:
             logging.warning("The 'urls' parameter is empty.")
             return [], []
@@ -366,7 +330,7 @@ class RSSFetcher:
         self.date_now = self.parse_date(datetime.now(pytz.utc))
 
         async def fetch_and_process(url):
-            processed_entries, metadata_update, code = await self.fetch_single_feed(url)
+            processed_entries, metadata_update, code = await self.fetch_single_feed(category, url)
             if code != 200:
                 failed_urls.add(url)
             else:

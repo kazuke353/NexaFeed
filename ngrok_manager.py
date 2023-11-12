@@ -1,9 +1,9 @@
 import os
 import signal
 import subprocess
-import time
 import json
-import requests
+import aiohttp
+import asyncio
 
 class NgrokManager:
     pid_file = 'ngrok.pid'
@@ -14,38 +14,40 @@ class NgrokManager:
         self.process = None
         self.api_url = "http://localhost:4040/api/tunnels"
 
-    def is_ngrok_running(self) -> (bool, str):
-        try:
-            response = requests.get(self.api_url)
-            if response.status_code == 200:
-                tunnels = json.loads(response.text)["tunnels"]
-                for tunnel in tunnels:
-                    if tunnel['proto'] == 'https':
-                        return True, tunnel['public_url']
-        except requests.exceptions.RequestException:
-            pass
+    async def is_ngrok_running(self) -> (bool, str):
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(self.api_url) as response:
+                    if response.status == 200:
+                        tunnels = json.loads(await response.text())["tunnels"]
+                        for tunnel in tunnels:
+                            if tunnel['proto'] == 'https':
+                                return True, tunnel['public_url']
+            except aiohttp.ClientError:
+                pass
         return False, ""
 
-    def start_ngrok(self):
-        command = f"ngrok authtoken {self.token} && ngrok http {self.port}"
+    async def start_ngrok(self):
+        os.system(f"ngrok authtoken {self.token}")  # Separate command execution
+        command = f"ngrok http {self.port}"
         self.process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)
-        time.sleep(3)  # Give ngrok time to initialize
-        running, public_url = self.is_ngrok_running()
 
-        with open(self.pid_file, 'w') as f:
-            f.write(str(self.process.pid))
+        await asyncio.sleep(3)  # Non-blocking sleep
 
+        running, public_url = await self.is_ngrok_running()
         if running:
+            with open(self.pid_file, 'w') as f:
+                f.write(str(self.process.pid))
             return public_url
         else:
             raise Exception("Failed to start ngrok")
 
-    def manage_ngrok(self) -> str:
-        running, public_url = self.is_ngrok_running()
+    async def manage_ngrok(self) -> str:
+        running, public_url = await self.is_ngrok_running()
         if running:
             return public_url
         else:
-            return self.start_ngrok()
+            return await self.start_ngrok()
 
     def terminate_ngrok(self):
         try:
