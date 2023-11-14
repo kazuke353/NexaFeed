@@ -11,7 +11,7 @@
 3. [Tech Stack](#tech-stack)
    - [Backend](#backend)
    - [Frontend](#frontend)
-   - [Templating and Database](#templating-and-database)
+   - [Templating and Database](#database)
 4. [Installation](#installation)
    - [Prerequisites](#prerequisites)
    - [Quick Start](#quick-start)
@@ -44,8 +44,7 @@ NexaFeed is a web-based RSS feed aggregator that consolidates your favorite webs
 - Alpine.js for dynamic UI components
 - FontAwesome for intuitive icons
 
-### Templating and Database <a name="templating-and-database"></a>
-- Jinja2 for Python templating
+### Database <a name="database"></a>
 - PostgreSQL for data storage
 
 ## Installation <a name="installation"></a>
