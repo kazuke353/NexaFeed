@@ -6,19 +6,25 @@
 > **Your one-stop solution for staying updated with the world.**
 
 ## Table of Contents
-- [Introduction](#introduction)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Roadmap](#roadmap)
-- [Why NexaFeed Started](#why-nexafeed-started)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
-- [Stay Updated](#stay-updated)
+1. [Introduction](#introduction)
+2. [Key Features](#features)
+3. [Tech Stack](#tech-stack)
+   - [Backend Technologies](#backend)
+   - [Frontend Technologies](#frontend)
+   - [Templating](#templating)
+   - [Database](#database)
+4. [Installation](#installation)
+   - [Prerequisites](#prerequisites)
+   - [Installation Guide](#installation-guide)
+   - [Docker Installation](#docker-installation)
+5. [How to Use](#how-to-use)
+6. [Roadmap](#roadmap)
+   - [Completed Features](#completed-features)
+   - [Upcoming Features](#upcoming-features)
+7. [Contributing](#contributing)
+8. [License](#license)
+9. [Acknowledgments](#acknowledgments)
+10. [Stay Updated](#stay-updated)
 
 ## Introduction
 
