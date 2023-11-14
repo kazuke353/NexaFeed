@@ -195,12 +195,15 @@ Here are some upcoming features and improvements planned for NexaFeed:
 ### Planned Features
 
 - &#10006; **Reddit Video Embed**: Support for embedding Reddit videos directly into the feed's entries.
-- &#10004; **Add/Remove RSS Feeds**: The ability to add and remove RSS feeds directly within the web app.
-- &#10004; **Category Management**: Create, edit, and remove categories for better feed organization.
-- &#10004; **RSS Feed Names**: Display the names of the RSS feeds alongside the tags, maintaining a consistent style.
+- &#10004; [Done] **Add/Remove RSS Feeds**: The ability to add and remove RSS feeds directly within the web app.
+- &#10004; [Done] **Category Management**: Create, edit, and remove categories for better feed organization.
+- &#10004; [Done] **RSS Feed Names**: Display the names of the RSS feeds alongside the tags, maintaining a consistent style.
 - &#10006; **Mark as Read**: Functionality to mark articles as read.
 - &#10006; **Save for Later**: Functionality to save articles for later to read.
 - &#10006; **Video Watch Time**: Save the watched time of videos when using save for later and restore it when revisiting.
+- &#10006; **Custom Parser**: Built on top of LXML to only parse the required items. With early stopping for certain scenarios to improve parsing speed even more.
+- &#10006; **Extensions**: Functionality to enable extensions and modifications to the current code base.
+- &#10006; **Strip Away**: Convert functionality like full YouTube and Reddit support and other unsupported features for a base RSS Reader into extension, leaving an unbloated base experience.
 
 ## License
 
