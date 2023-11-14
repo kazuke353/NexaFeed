@@ -194,22 +194,6 @@ Our ongoing commitment to improvement is outlined in our roadmap:
 - **Extensions**: (Planned) Enable community-driven extensions and modifications.
 - **Strip Away**: (Planned) Refactor specific functionalities into extensions for a lean core experience.
 
-## Why NexaFeed Started
-
-Hey, glad you're here! Let me tell you a bit about why I felt the need to build NexaFeed.
-
-### The Struggle Is Real
-You know how it goes, right? We're living in an information-rich era, but finding a single platform that bundles everything up just the way you want it is a real challenge. I was on the same boat, struggling to keep up with things like the latest security breaches, privacy news, and much more.
-
-### Unlimited Access
-So, the first thing I wanted was more than what platforms like Feedly could offer. Those 100 RSS feed caps for the free plan weren't cutting it for me. I needed a platform that could grow as my interests and needs did.
-
-### YouTube, Anytime, Anywhere
-Switching platforms to stay updated with YouTube was a hassle. I wanted that integrated right into NexaFeed.
-
-### Any Device, Any Time
-One of the best things about NexaFeed being a web app is that you can use it on any device that has a web browser. Your content will always be within reach.
-
 ## Contributing
 
 As an open-source project, we welcome contributions of all forms. Please feel free to submit issues, pull requests, or suggest features.
