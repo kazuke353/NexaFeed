@@ -6,7 +6,6 @@
 > **Your one-stop solution for staying updated with the world.**
 
 ## Table of Contents
-- [Why I Started NexaFeed](#why-i-started-nexafeed)
 - [Introduction](#introduction)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -14,25 +13,9 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Configuration](#configuration)
-- [Caching](#caching)
 - [Roadmap](#roadmap)
+- [Why NexaFeed Started](#why-nexafeed-started)
 - [License](#license)
-
-## Why I Started NexaFeed
-
-Hey, glad you're here! Let me tell you a bit about why I felt the need to build NexaFeed.
-
-### The Struggle Is Real
-You know how it goes, right? We're living in an information-rich era, but finding a single platform that bundles everything up just the way you want it is a real challenge. I was on the same boat, struggling to keep up with things like the latest security breaches, privacy news, and much more.
-
-### Unlimited Access
-So, the first thing I wanted was more than what platforms like Feedly could offer. Those 100 RSS feed caps for the free plan weren't cutting it for me. I needed a platform that could grow as my interests and needs did.
-
-### YouTube, Anytime, Anywhere
-Switching platforms to stay updated with YouTube was a hassle. I wanted that integrated right into NexaFeed.
-
-### Any Device, Any Time
-One of the best things about NexaFeed being a web app is that you can use it on any device that has a web browser. Your content will always be within reach.
 
 ## Introduction
 
@@ -184,10 +167,6 @@ Dive into `config.yaml` to fine-tune settings to your liking. Adjust cache timin
 
 Start your NexaFeed adventure today and redefine how you interact with content online!
 
-## Caching
-
-NexaFeed employs a straightforward caching mechanism to accelerate feed loading times.
-
 ## Roadmap
 
 Here are some upcoming features and improvements planned for NexaFeed:
@@ -201,9 +180,25 @@ Here are some upcoming features and improvements planned for NexaFeed:
 - &#10006; **Mark as Read**: Functionality to mark articles as read.
 - &#10006; **Save for Later**: Functionality to save articles for later to read.
 - &#10006; **Video Watch Time**: Save the watched time of videos when using save for later and restore it when revisiting.
-- &#10006; **Custom Parser**: Built on top of LXML to only parse the required items. With early stopping for certain scenarios to improve parsing speed even more.
+- &#10006; **Custom Parser**: Built on top of LXML to only parse the required items. With early stopping for certain scenarios to improve parsing speed even more. Have feedparser as a fallback in case the parsing fails or the fetched entries are incomplete.
 - &#10006; **Extensions**: Functionality to enable extensions and modifications to the current code base.
 - &#10006; **Strip Away**: Convert functionality like full YouTube and Reddit support and other unsupported features for a base RSS Reader into extension, leaving an unbloated base experience.
+
+## Why NexaFeed Started
+
+Hey, glad you're here! Let me tell you a bit about why I felt the need to build NexaFeed.
+
+### The Struggle Is Real
+You know how it goes, right? We're living in an information-rich era, but finding a single platform that bundles everything up just the way you want it is a real challenge. I was on the same boat, struggling to keep up with things like the latest security breaches, privacy news, and much more.
+
+### Unlimited Access
+So, the first thing I wanted was more than what platforms like Feedly could offer. Those 100 RSS feed caps for the free plan weren't cutting it for me. I needed a platform that could grow as my interests and needs did.
+
+### YouTube, Anytime, Anywhere
+Switching platforms to stay updated with YouTube was a hassle. I wanted that integrated right into NexaFeed.
+
+### Any Device, Any Time
+One of the best things about NexaFeed being a web app is that you can use it on any device that has a web browser. Your content will always be within reach.
 
 ## License
 
