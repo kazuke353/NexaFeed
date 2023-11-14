@@ -1,7 +1,7 @@
 # NexaFeed 📰🔍
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Python Version](https://img.shields.io/badge/python-3.x-blue)
+![Python Version](https://img.shields.io/badge/python-3.9-blue)
 
 > **Your one-stop solution for staying updated with the world.**
 
@@ -15,7 +15,10 @@
 - [Configuration](#configuration)
 - [Roadmap](#roadmap)
 - [Why NexaFeed Started](#why-nexafeed-started)
+- [Contributing](#contributing)
 - [License](#license)
+- [Acknowledgments](#acknowledgments)
+- [Stay Updated](#stay-updated)
 
 ## Introduction
 
@@ -169,20 +172,21 @@ Start your NexaFeed adventure today and redefine how you interact with content o
 
 ## Roadmap
 
-Here are some upcoming features and improvements planned for NexaFeed:
+Our ongoing commitment to improvement is outlined in our roadmap:
 
-### Planned Features
+### Completed Features
+- **Category Management**: Limitless creation and customization of feed categories.
+- **Add/Remove RSS Feeds**: Manage your RSS feeds directly within the web app.
+- **RSS Feed Names**: Consistent display of RSS feed names alongside their tags.
 
-- &#10004; [Done] **Category Management**: Create, edit, and remove categories for better feed organization. Allowing for limitless category creation and customization.
-- &#10004; [Done] **Add/Remove RSS Feeds**: The ability to add and remove RSS feeds directly within the web app.
-- &#10004; [Done] **RSS Feed Names**: Display the names of the RSS feeds alongside the tags eg. Youtube, maintaining a consistent style.
-- &#10006; [30%] **Reddit Video Embed**: Support for embedding Reddit videos directly into the feed's entries.
-- &#10006; [Planned] **Mark as Read**: Functionality to mark articles as read.
-- &#10006; [Planned] **Save for Later**: Functionality to save articles for later to read.
-- &#10006; [Planned] **Video Watch Time**: Save the watched time of videos when using save for later and restore it when revisiting.
-- &#10006; [Planned] **Custom Parser**: Built on top of LXML to only parse the required items. With early stopping for certain scenarios to improve parsing speed even more. Have feedparser as a fallback in case the parsing fails or the fetched entries are incomplete.
-- &#10006; [Planned] **Extensions**: Functionality to enable extensions and modifications to the current code base.
-- &#10006; [Planned] **Strip Away**: Convert functionality like full YouTube and Reddit support and other unsupported features for a base RSS Reader into extension, leaving an unbloated base experience.
+### Upcoming Features
+- **Reddit Video Embed**: (30% complete) Integrating Reddit video embedding directly into feed entries.
+- **Mark as Read**: (Planned) Easily mark articles as read.
+- **Save for Later**: (Planned) Save articles to read at your convenience.
+- **Video Watch Time**: (Planned) Save and restore the watch time for videos in your 'Read Later' list.
+- **Custom Parser**: (Planned) A tailored parser built on LXML for optimized performance, with feedparser as a fallback.
+- **Extensions**: (Planned) Enable community-driven extensions and modifications.
+- **Strip Away**: (Planned) Refactor specific functionalities into extensions for a lean core experience.
 
 ## Why NexaFeed Started
 
@@ -200,6 +204,18 @@ Switching platforms to stay updated with YouTube was a hassle. I wanted that int
 ### Any Device, Any Time
 One of the best things about NexaFeed being a web app is that you can use it on any device that has a web browser. Your content will always be within reach.
 
+## Contributing
+
+As an open-source project, we welcome contributions of all forms. Please feel free to submit issues, pull requests, or suggest features.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+
+## Acknowledgments
+
+Thanks to all the contributors who have helped shape NexaFeed into what it is today.
+
+## Stay Updated
+
+For the latest updates and feature releases, watch this repository or join our community.
