@@ -7,87 +7,50 @@
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Key Features](#features)
+2. [Features](#features)
 3. [Tech Stack](#tech-stack)
-   - [Backend Technologies](#backend)
-   - [Frontend Technologies](#frontend)
-   - [Templating](#templating)
-   - [Database](#database)
+   - [Backend](#backend)
+   - [Frontend](#frontend)
+   - [Templating and Database](#templating-and-database)
 4. [Installation](#installation)
    - [Prerequisites](#prerequisites)
-   - [Installation Guide](#installation-guide)
-   - [Docker Installation](#docker-installation)
-5. [How to Use](#how-to-use)
+   - [Quick Start](#quick-start)
+   - [Docker](#docker)
+5. [Usage](#usage)
 6. [Roadmap](#roadmap)
-   - [Completed Features](#completed-features)
-   - [Upcoming Features](#upcoming-features)
 7. [Contributing](#contributing)
 8. [License](#license)
 9. [Acknowledgments](#acknowledgments)
-10. [Stay Updated](#stay-updated)
 
-## Introduction
+## Introduction <a name="introduction"></a>
+NexaFeed is a web-based RSS feed aggregator that consolidates your favorite websites into one intuitive interface. Designed with efficiency and user experience in mind, it's built using Quart, Jinja2, Bootstrap, and Alpine.js.
 
-NexaFeed is a web-based RSS feed aggregator that allows you to stay updated with your favorite websites, all in one place. Built with Quart, Jinja2, Bootstrap, and Alpine.js, it offers a clean UI and various features to enhance your feed reading experience.
+## Features <a name="features"></a>
+- **YouTube Integration**: Watch YouTube videos without leaving NexaFeed.
+- **Categorical Organization**: Customizable categories for efficient navigation.
+- **Advanced Cache Management**: Quick content retrieval with sophisticated caching.
+- **Simple OPML Import**: Import your subscriptions with a simple .opml file drop.
+- **Responsive Design**: A seamless experience on all devices.
+- **High-Efficiency Infinite Scroll**: Browse endlessly with minimal resource use.
+- **Smart Autoclean**: Automated maintenance for a clean feed.
+- **Cross-Platform**: Accessible on any device with a web browser.
 
-![Screenshot](screenshot.png)
+## Tech Stack <a name="tech-stack"></a>
+### Backend <a name="backend"></a>
+- Python, Quart, feedparser, pyngrok, cachetools, python-dateutil, user_agent, lxml, aiohttp, ruamel.yaml
 
-## NexaFeed: Streamlined and Powerful Web-based RSS Feed Reader
+### Frontend <a name="frontend"></a>
+- Bootstrap for responsive design
+- Alpine.js for dynamic UI components
+- FontAwesome for intuitive icons
 
-<a id="features"></a>
-### Key Features
+### Templating and Database <a name="templating-and-database"></a>
+- Jinja2 for Python templating
+- PostgreSQL for data storage
 
-- **YouTube Integration**: Effortlessly watch YouTube videos directly within NexaFeed.
-- **Categorical Organization**: Streamline your browsing experience with customizable categories, making feed navigation intuitive and efficient.
-- **Advanced Cache Management**: Experience faster feed loading with our sophisticated caching system, ensuring a seamless and quick content retrieval.
-- **Simple OPML Import**: Seamlessly transition to NexaFeed by importing your existing subscriptions. Just drop any .opml file into the designated folder, and you're set!
-- **Responsive Design for Modern Users**: Enjoy a consistent and fluid experience across all devices, thanks to our adaptive design that looks great on any screen size.
-- **High-Efficiency Infinite Scroll**: Powered by Alpine.js, NexaFeed's lightweight infinite scroll feature enhances your browsing without compromising on performance.
-- **Smart Autoclean Functionality**: Keep your feed clean and efficient. Autoclean automatically removes inaccessible or non-responsive feeds, ensuring a streamlined experience.
-- **Truly Cross-Platform**: NexaFeed's web-based nature means you can stay informed and entertained on any device with a web browser. From desktops to smartphones, your content is always within reach, further enhanced by the freedom to use your favorite browser extensions.
-
-Experience the future of feed reading with NexaFeed – Your gateway to organized, efficient, and enjoyable content consumption.
-
-<a id="tech-stack"></a>
-## Tech Stack 🛠️
-
-### Backend
-- Python: The core programming language for server-side logic.
-- Quart: Asynchronous Python web microframework.
-- feedparser: Library for parsing RSS/Atom feeds.
-- pyngrok: Tool to expose local servers to the public internet securely.
-- cachetools: Caching mechanisms for Python functions.
-- python-dateutil: Library for parsing and manipulating dates and times.
-- user_agent: Library for parsing and generating user agent strings.
-- lxml: Library for XML and HTML parsing.
-- aiohttp: Library for asynchronous HTTP requests in Python.
-- ruamel.yaml: Library for YAML parsing and manipulation.
-
-### Frontend Technologies
-
-In this project, the frontend is built using a combination of modern tools and frameworks, each chosen for their specific strengths in creating a responsive and interactive user interface.
-
-- **Bootstrap**: A powerful and popular frontend framework that is used for developing responsive and mobile-first web pages. It provides a wide range of CSS and JavaScript tools for creating layouts, forms, buttons, navigation, and other interface components, ensuring a consistent and attractive design across various devices and screen sizes.
-
-- **Alpine.js**: This is a lightweight and minimalistic JavaScript framework, ideal for handling reactive and dynamic components on the frontend. Alpine.js allows us to add sophisticated interactive behaviors to our web pages without the overhead of larger frameworks. It's particularly useful for creating dropdowns, modals, and tabs with ease, enhancing user experience with its simplicity and efficiency.
-
-- **FontAwesome**: An extensive library of icons, FontAwesome is integrated to enhance the user interface with visually appealing and recognizable symbols. These icons are used throughout the website to aid in navigation, illustrate concepts, and improve the overall aesthetic appeal. FontAwesome's vast collection ensures that we have a wide variety of icons to choose from, suitable for various contexts and design needs.
-
-### Templating
-- Jinja2: Templating engine for Python.
-
-### Database
-- PostgreSQL: Object-relational database system for secure and scalable storage.
-
-Our mission with NexaFeed was to craft a self-hosted solution that doesn't just meet but exceeds your expectations. Customizable, robust, and user-friendly - NexaFeed is more than an RSS reader; it's a testament to what modern web technologies can achieve.
-
-Dive into the project and explore how these technologies harmonize to deliver an unparalleled content consumption experience.
-
----
-
-## Prerequisites
-
-Before you begin, ensure you have **Python 3.9 or higher** installed on your system. You can check your Python version using:
+## Installation <a name="installation"></a>
+### Prerequisites <a name="prerequisites"></a>
+Ensure you have **Python 3.9 or higher** installed on your system. You can check your Python version using:
 
   ```bash
   python --version
