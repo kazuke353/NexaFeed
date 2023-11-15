@@ -142,64 +142,23 @@ class DBManager:
             await self.engine.close()
             await self.engine.wait_closed()
 
-    async def select_data(self, table_name, condition=None):
+    async def select_data(self, table_name, query=None, params=None):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
             async with conn.transaction():
-                values = []
-                order_clause = ""
-                limit_clause = ""
-                custom_where_clause = ""
-                standard_where_clause = ""
-                standard_where_parts = []
-
-                if condition:
-                    # Extract and handle special parameters from condition
-                    limit = condition.pop('limit', None)
-                    order_by = condition.pop('order_by', None)
-                    custom_where = condition.pop('WHERE', None)
-                    custom_values = condition.pop('VALUES', [])
-
-                    # Process standard conditions
-                    for key, value in condition.items():
-                        if isinstance(value, list) and len(value) == 2:
-                            # Handling conditions in the format {"column": ["operator", "value"]}
-                            standard_where_parts.append(f"{key} {value[0]} ${len(values) + 1}")
-                            values.append(value[1])
-                        else:
-                            # Handling simple equality conditions
-                            standard_where_parts.append(f"{key} = ${len(values) + 1}")
-                            values.append(value)
-
-                    standard_where_clause = ' AND '.join(standard_where_parts)
-                    if standard_where_clause:
-                        standard_where_clause = f"WHERE {standard_where_clause}"
-
-                    # Construct custom WHERE clause
-                    if custom_where:
-                        # Append custom WHERE clause, ensuring to add AND if standard conditions exist
-                        custom_where_clause = f"{' AND' if 'WHERE' in standard_where_clause else ' WHERE'}{custom_where}"
-                        values.extend(custom_values)
-
-                    if order_by:
-                        order_clause = f"ORDER BY {order_by}"
-
-                    limit_clause = f"LIMIT {limit}" if limit is not False or limit is not None else ""
-
-                query = f"""
-                    SELECT json_agg(t) 
-                    FROM (SELECT * FROM {table_name} 
-                    {standard_where_clause}
-                    {custom_where_clause}
-                    {order_clause}
-                    {limit_clause}) t
-                """
-                print(query)
-                record = await conn.fetchval(query, *values)
-                if record:
-                    record = json.loads(str(record))
-
-                return record
+                # If a custom query is provided, use it directly
+                if query:
+                    final_query = f"SELECT json_agg(t) FROM (SELECT * FROM {table_name} {query}) t"
+                else:
+                    # If no custom query is provided, select all from the table
+                    final_query = f"SELECT json_agg(t) FROM (SELECT * FROM {table_name}) t"
+    
+                print(final_query)
+                if params:
+                    print(*params)
+                # Execute the query with the provided parameters and return the result
+                record = await conn.fetchval(final_query, *params) if params else await conn.fetchval(final_query)
+                return json.loads(record) if record else None
 
     async def delete_data(self, table_name, condition):
         pool = await self.get_pool()
@@ -288,6 +247,47 @@ class DBManager:
                     for field in json_fields:
                         row[field] = json.dumps(row[field])
                     await prepared_stmt.executemany([list(row.values())])
+
+class QueryBuilder:
+    def __init__(self):
+        self.where_clauses = []
+        self.params = []  # Store the parameters for prepared statements
+        self.order_by_clause = None
+        self.limit_clause = None
+
+    def where(self, condition, *params):
+        self.where_clauses.append(condition)
+        self.params.extend(params)
+        return self
+
+    def orderBy(self, columns):
+        self.order_by_clause = f"ORDER BY {columns}"
+        return self
+
+    def limit(self, limit):
+        self.limit_clause = f"LIMIT {limit}"
+        return self
+
+    def build(self):
+        final_where_clauses = []
+        param_index = 1
+
+        # Iterate through each clause and replace '%s' with unique '${i}'
+        for clause in self.where_clauses:
+            while '%s' in clause:
+                clause = clause.replace('%s', f"${param_index}", 1)
+                param_index += 1
+            final_where_clauses.append(clause)
+
+        # Build the query
+        query_parts = [
+            "WHERE " + " AND ".join(final_where_clauses) if final_where_clauses else "",
+            self.order_by_clause or "",
+            self.limit_clause or ""
+        ]
+
+        # Join the query parts and return
+        return " ".join(filter(None, query_parts)).strip(), self.params
 
 async def setup_postgresql():
     try:

@@ -3,6 +3,13 @@ document.addEventListener("alpine:init", () => {
         categories: [],
         feed_items: [],
         currentCategory: null,
+        initCategories() {
+            this.fetchCategories().then(() => {
+                if (this.categories.length > 0) {
+                    this.setCurrentCategory(this.categories[0].id);
+                }
+            });
+        },
         async fetchCategories() {
             try {
                 const response = await fetch("/api/categories");
@@ -12,6 +19,7 @@ document.addEventListener("alpine:init", () => {
             } catch (error) {
                 console.error("Error fetching categories:", error);
             }
+            return true
         },
         setCurrentCategory(categoryId) {
             this.currentCategory = categoryId;
@@ -29,12 +37,8 @@ document.addEventListener("alpine:init", () => {
     Alpine.store("sharedState", sharedState);
 
     Alpine.data("sharedData", () => ({
-        init() {
-            this.fetchCategories().then(() => {
-                if (this.categories.length > 0) {
-                    this.setCurrentCategory(this.categories[0].id);
-                }
-            });
+        fetch() {
+            Alpine.store("sharedState").initCategories();
         },
         fetchCategories() {
             return Alpine.store("sharedState").fetchCategories();

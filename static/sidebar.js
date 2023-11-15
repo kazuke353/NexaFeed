@@ -1,5 +1,6 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('sidebarManager', () => ({
+        open: false,
         // Fetch the feeds for a given category
         fetchFeeds: async function (category) {
             // Check if feeds are already fetched
@@ -38,14 +39,7 @@ document.addEventListener('alpine:init', () => {
                     },
                     body: JSON.stringify({ name: categoryName }),
                 });
-                Alpine.store("sharedState").categories.push({
-                    name: categoryName,
-                    expanded: false,
-                });
-                // Add an id field for testing
-                Alpine.store("sharedState").categories.forEach((category, index) => {
-                    category.id = index + 1; // Assign a temporary unique id
-                });
+                Alpine.store("sharedState").initCategories();
             }
         },
 
@@ -59,16 +53,7 @@ document.addEventListener('alpine:init', () => {
                 await fetch(`/api/categories/${category.id}`, {
                     method: "DELETE",
                 });
-                // Remove the category from the list
-                const index = Alpine.store("sharedState").categories.indexOf(category);
-                if (index !== -1) {
-                    Alpine.store("sharedState").categories.splice(index, 1);
-                }
-                // Add an id field for testing
-                Alpine.store("sharedState").categories.forEach((category, index) => {
-                    category.id = index + 1; // Assign a temporary unique id
-                });
-                Alpine.store("sharedState").setCurrentCategory(Alpine.store("sharedState").categories[0].id);
+                Alpine.store("sharedState").initCategories();
             }
         },
     
@@ -85,11 +70,7 @@ document.addEventListener('alpine:init', () => {
                     },
                     body: JSON.stringify({ url: feedUrl }),
                 });
-                Alpine.store("sharedState").categories[category.id].feeds.push({ name: feedUrl, url: feedUrl });
-                // Add an id field for testing
-                Alpine.store("sharedState").categories[category.id].feeds.forEach((feed, index) => {
-                    feed.id = index + 1; // Assign a temporary unique id
-                });
+                this.fetchFeeds(category);
             }
         },
     
@@ -103,15 +84,7 @@ document.addEventListener('alpine:init', () => {
                 await fetch(`/api/categories/feeds/${feed.id}`, {
                     method: "DELETE",
                 });
-                // Find the index of the feed in the category's feeds array
-                const index = Alpine.store("sharedState").categories[category.id].feeds.indexOf(feed);
-                if (index !== -1) {
-                    // Remove the feed from the array
-                    Alpine.store("sharedState").categories[category.id].feeds.splice(index, 1);
-                }
-                Alpine.store("sharedState").categories[category.id].feeds.forEach((feed, index) => {
-                    feed.id = index + 1; // Assign a temporary unique id
-                });
+                this.fetchFeeds(category);
             }
         },
     
@@ -132,14 +105,7 @@ document.addEventListener('alpine:init', () => {
                             body: formData,
                         }
                     );
-                    const data = await response.json();
-                    // Add an id field for testing
-                    data.feeds.forEach((feed, index) => {
-                        feed.id = index + 1; // Assign a temporary unique id
-                    });
-                    // Update the feeds for the selected category
-                    category.feeds = data.feeds;
-                    console.log("Feeds:", category.feeds);
+                    this.fetchFeeds(category);
                 } catch (error) {
                     console.error("Error importing OPML file:", error);
                 }

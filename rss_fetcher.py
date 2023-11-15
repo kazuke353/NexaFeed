@@ -10,6 +10,7 @@ from dateutil.parser import parse
 import feedparser
 from user_agent import generate_user_agent
 from media_fetcher import fetch_media
+from db_manager import QueryBuilder
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -175,25 +176,24 @@ class RSSFetcher:
     
     async def get_feed(self, category, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.3):
         print(f"Fetching feed with limit {limit}")
+        query_builder = QueryBuilder()
+        query_builder.where("category_id = %s", int(category))
 
-        condition = {
-            "limit": int(limit),
-            "order_by": "published_date DESC, id DESC",
-            "category_id": int(category)
-        }
-
-
-        # Add pagination conditions if last_id and last_pd are provided
         if last_id is not None and last_pd is not None:
-            condition["published_date"] = ["<", self.parse_date(last_pd)]
-            condition["id"] = ["<", int(last_id)]
+            query_builder.where("published_date < %s", self.parse_date(last_pd))
+            query_builder.where("id < %s", int(last_id))
 
-        # If a search query is provided, add to the WHERE clause
         if search_query:
-            condition["WHERE"] = "((similarity(title, $3) > $4 OR similarity(content, $3) > $4 OR similarity(additional_info->>'creator', $3) > $4) OR url ILIKE $3)"
-            condition["VALUES"] = [search_query, threshold]
+            # Validate and sanitize search_query here to avoid sql injection or other exploits
+            # ...
 
-        feeds = await self.db_manager.select_data("feed_entries", condition)
+            search_condition = "((similarity(title, %s) > %s OR similarity(content, %s) > %s OR similarity(additional_info->>'creator', %s) > %s) OR url ILIKE %s)"
+            query_builder.where(search_condition, search_query, threshold, search_query, threshold, search_query, threshold, f"%{search_query}%")
+
+        query_builder.orderBy("published_date DESC, id DESC").limit(int(limit))
+        query, params = query_builder.build()
+
+        feeds = await self.db_manager.select_data("feed_entries", query, params)
         return feeds
     
     async def process_entry(self, category, entry, url, feed_title_raw=None):
@@ -289,7 +289,7 @@ class RSSFetcher:
 
                     # Process entries and collect published dates concurrently
                     processed_entries_and_dates = await asyncio.gather(
-                        *(self.process_entry(entry, category, url, feed_title_raw) for entry in feed.entries)
+                        *(self.process_entry(category, entry, url, feed_title_raw) for entry in feed.entries)
                     )
 
                     processed_entries = []

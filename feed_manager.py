@@ -1,4 +1,5 @@
 from rss_fetcher import RSSFetcher
+from db_manager import QueryBuilder
 import time
 
 class Feed:
@@ -6,7 +7,7 @@ class Feed:
         self.rss_fetcher = None
         self.db_manager = db_manager
         self.config_manager = config_manager
-        self.urls = None
+        self.urls = {}
     
     async def get_categories(self):
         categories = await self.db_manager.select_data("categories")
@@ -15,8 +16,14 @@ class Feed:
     async def get_feeds(self, category):
         if not category:
             return []
-        condition = {"category_id": category}
-        feeds = await self.db_manager.select_data("feeds", condition)
+        query_builder = QueryBuilder()
+
+        # Adding basic conditions
+        query_builder.where("category_id = %s", int(category))
+        # Final Query
+        query, params = query_builder.build()
+        feeds = await self.db_manager.select_data("feeds", query, params)
+        self.urls[category] = [feed['url'] for feed in feeds]
         return feeds
 
     async def add_category(self, category_name):
@@ -46,19 +53,14 @@ class Feed:
 
         if not self.rss_fetcher:
             self.rss_fetcher = RSSFetcher(self.db_manager)
-        
-        # Initialize self.urls as a dictionary if it hasn't been already
-        if self.urls is None:
-            self.urls = {}
 
         # Ensure the category exists in the dictionary and has a list initialized
         if category not in self.urls:
-            feeds = await self.get_feeds(category)
-            self.urls[category] = [feed['url'] for feed in feeds]
+            await self.get_feeds(category)
 
         pool = await self.db_manager.get_pool()
         try:
-            failed_urls, rate_limited_urls = await self.rss_fetcher.fetch_feeds(self.urls[category], pool)
+            failed_urls, rate_limited_urls = await self.rss_fetcher.fetch_feeds(category, self.urls[category], pool)
         except ValueError:
             print("Error: init_fetch did not return enough values.")
         
@@ -70,7 +72,7 @@ class Feed:
             self.rss_fetcher.remove_failed_feeds(self.config_manager, f'{category}_feed_urls', failed_urls)
 
         fetch_duration = time.time() - start_time
-        print(f"Fetched in {fetch_duration:.2f} seconds")
+        print(f"Initialized feeds in {fetch_duration:.2f} seconds")
         
         return True
 
@@ -82,6 +84,7 @@ class Feed:
             self.rss_fetcher = RSSFetcher(self.db_manager)
 
         if force_init:
+            print(force_init, search_query)
             response = await self.init_fetch(category)
             if not response:
                 return []

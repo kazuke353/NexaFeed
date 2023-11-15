@@ -56,11 +56,14 @@ document.addEventListener('alpine:init', () => {
                     if (response.isJson) {
                         const data = response.data;
                         console.log("Data:", data);
-                    
-                        this.updateUI(data.feed_items, category, isInit);
-                    } else if (!isInit) {
-                        console.log("Fetching feeds again");
-                        this.paginateFetchedFeed(category, true);
+                        console.log("Feed Items:", data.feed_items);
+
+                        if ((!data || !data.feed_items) && !isInit) {
+                            console.log("Fetching feeds again");
+                            this.paginateFetchedFeed(category, true);
+                        } else {
+                            this.updateUI(data.feed_items, category, isInit);
+                        }
                     } else {
                         console.error(
                             "Response is not JSON:",
@@ -77,8 +80,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         clearCacheAndFeeds: function () {
-            this.updateUI("", null, true);
-            this.updateLastIds(null, null);
+            this.updateUI(null, null, true);
+            this.updateLastEntry(null, null);
         },
 
         updateUI: function (feed_items, category = null, isInit = false) {
@@ -90,8 +93,10 @@ document.addEventListener('alpine:init', () => {
           }
         
           // Add the new feed items to the feed_cache
-          this.feedCache[category] = this.feedCache[category].concat(feed_items);
-        
+          if (feed_items)
+          {
+            this.feedCache[category] = this.feedCache[category].concat(feed_items);
+          }
           // Update the feed_items array in the sharedState store
           Alpine.store("sharedState").feed_items = this.feedCache[category];
         
@@ -101,11 +106,12 @@ document.addEventListener('alpine:init', () => {
             const last_entry = feed_items[feed_items.length - 1];
             const last_id = last_entry.id;
             const last_pd = last_entry.published_date;
-            this.updateLastIds(last_id, last_pd);
+            this.updateLastEntry(last_id, last_pd);
           }
         },
 
-        updateLastIds: function (newLastId, newLastPd) {
+        updateLastEntry: function (newLastId, newLastPd) {
+            console.log("Last Entry: ", newLastId, newLastPd)
             this.lastId = newLastId;
             this.lastPd = newLastPd;
         },
@@ -114,7 +120,7 @@ document.addEventListener('alpine:init', () => {
             if (this.loading) return;
         
             // Get the feed container element
-            const feedContainer = document.getElementById("feed-container-inner");
+            const feedContainer = document.getElementById("feed-container");
             if (!feedContainer) return;
         
             // Get the scroll position and height properties
@@ -127,11 +133,12 @@ document.addEventListener('alpine:init', () => {
                 this.loading = true;
                 this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory())
             }
-        },        
+        },
 
         goBack: function (category_id = null) {
             this.searchQuery = "";
             document.getElementById("search-box").value = this.searchQuery;
+            this.clearCacheAndFeeds();
             this.paginateFetchedFeed((category_id || Alpine.store("sharedState").getCurrentCategory()));
         },
 
@@ -144,14 +151,18 @@ document.addEventListener('alpine:init', () => {
 
                 if (response.isJson) {
                     const data = response.data;
-                    const html = data.html;
-                    const newContentExists = this.checkForNewContent(html);
+                    console.log("Data:", data);
+                    console.log("Feed Items:", data.feed_items);
+
+                    if (data && data.feed_items) {
+                        const newContentExists = this.checkForNewContent(data.feed_items);
                 
-                    if (newContentExists && !this.feedCache[Alpine.store("sharedState").getCurrentCategory()]) {
-                        this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), true, data);
-                    } else if (newContentExists) {
-                        this.showNotification();
-                        fetchedFeed = data;
+                        if (newContentExists && !this.feedCache[Alpine.store("sharedState").getCurrentCategory()]) {
+                            this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), true, data);
+                        } else if (newContentExists) {
+                            this.showNotification();
+                            this.fetchedFeed = data.feed_items;
+                        }
                     }
                 } else {
                     console.error(
@@ -160,25 +171,23 @@ document.addEventListener('alpine:init', () => {
                     );
                 }
 
-                setTimeout(checkForUpdates, 600000);
+                setTimeout(checkForUpdates, 120000);
             };
 
             checkForUpdates();
         },
 
-        checkForNewContent: function (html) {
-            const currentFeedCache = this.feedCache[Alpine.store("sharedState").getCurrentCategory()];
-
-            if (!currentFeedCache) {
+        checkForNewContent: function (fetchedEntries) {
+            if (!fetchedEntries) {
+                return false;
+            }
+            
+            const currentEntries = this.feedCache[Alpine.store("sharedState").getCurrentCategory()];
+            if (!currentEntries) {
                 return true;
             }
 
-            const currentEntries = currentFeedCache.split("</div>");
-            const currentFirstEntry = currentEntries[0];
-            const fetchedEntries = html.split("</div>");
-            const fetchedFirstEntry = fetchedEntries[0];
-
-            return fetchedFirstEntry !== currentFirstEntry;
+            return currentEntries[0].id !== fetchedEntries[0].id;
         },
 
         stopFeedUpdates: function () {
@@ -211,13 +220,13 @@ document.addEventListener('alpine:init', () => {
         initFeed: function (isInit = false) {
             this.waitForCurrentCategory(() => {
                 this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), isInit);
-                //this.startFeedUpdates();
+                this.startFeedUpdates();
             });
 
             const notification = document.getElementById("notification");
             notification.addEventListener("click", () => {
                 this.hideNotification();
-                this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), true, fetchedFeed);
+                this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), true, this.fetchedFeed);
             });
         },
 
@@ -235,11 +244,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         search: function (query = null, category = null) {
-            // Convert query to string if it's not already
-            if (typeof query !== 'string') {
-                query = String(query);
+            if (query && query != null) {
+                this.searchQuery = query;
+            } else {
+                this.searchQuery = document.getElementById("search-box").value.trim()
             }
-            this.searchQuery = (query || document.getElementById("search-box").value).trim();
+            // Convert query to string if it's not already
+            if (typeof this.searchQuery !== 'string') {
+                this.searchQuery = String(this.searchQuery);
+            }
         
             // Determine the category value
             let categoryValue;
@@ -255,7 +268,7 @@ document.addEventListener('alpine:init', () => {
             }
         
             // Paginate the fetched feed based on the determined values
-            this.paginateFetchedFeed(categoryValue, this.searchQuery.length > 0);
+            this.paginateFetchedFeed(categoryValue, false);
         },
 
         openModal: function (item) {
@@ -280,5 +293,7 @@ document.addEventListener('alpine:init', () => {
                 document.body.classList.remove("no-scroll");
             }
         },
+
+        changeTheme: window.changeTheme
     }));
 });

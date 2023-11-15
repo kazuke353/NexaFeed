@@ -1,53 +1,14 @@
-:root {
-    /* Color Scheme */
-    --title-color: #000;
-    --accent-color: #f66;
-    --highlight-color: #6f9;
-    --link-color: #90f;
-    --primary-color: #06f;
-    --secondary-color: #fc0;
-    --background-color: #f3f3f3;
-    --secondary-bg-color: #ddd;
-    --text-color: #333;
-    --border-color-1: #ccc;
-    --border-color-2: #e6e6e6;
-    --body-color: var(--text-color);
-    --body-bg: var(--background-color);
-    --primary: var(--primary-color);
-    --secondary: var(--secondary-color);
-    --light: var(--secondary-bg-color);
-    --dark: var(--text-color);
-    --success: var(--highlight-color);
-    --info: var(--link-color);
-    --warning: var(--accent-color);
-    --danger: var(--accent-color);
-}
-
-body {
-    font-family: var(--bs-body-font-family);
-    margin: 0;
-    background: var(--background-color);
-    color: var(--text-color);
-}
-
 .card-thumbnail {
     width: 100%;
     height: auto;
-}
-
-.modal-content,
-.feed-card,
-.card-footer {
-    background: var(--background-color);
-    color: var(--text-color);
 }
 
 .modal-content {
     position: fixed;
     top: 50%;
     left: 50%;
-    height: 98%;
-    width: 99%;
+    height: 100%;
+    width: 100%;
     max-height: 100%;
     max-width: 100%;
     padding: 20px 20px 50px;
@@ -59,22 +20,13 @@ body {
 .card-footer,
 .modal-footer {
     width: 100%;
-    background: var(--background-color);
 }
 
 .footer {
-    color: var(--secondary-color);
     text-align: center;
     padding: 10px;
     margin-top: auto;
     font-size: clamp(16px, 1em, 100%);
-}
-
-.spinner-border,
-.modal-footer,
-.feed-card:hover,
-.feed-card:active {
-    color: var(--secondary-color);
 }
 
 .iframe-container {
@@ -96,7 +48,6 @@ body {
 .card-footer,
 .modal-footer {
     position: relative;
-    border-top: 1px solid var(--border-color-2);
 }
 
 .card-footer {
@@ -117,115 +68,19 @@ body {
     bottom: 0;
     left: 0;
     height: 50px;
-    transition: background-color 0.3s ease;
-}
-
-.modal-footer:hover,
-.modal-footer:active,
-.feed-card:hover,
-.feed-card:active {
-    background: rgba(0, 0, 0, 0.2);
-}
-
-.modal-footer:active,
-.feed-card:active {
-    background: rgba(0, 0, 0, 0.4);
-}
-
-@media (max-width: 576px) {
-    .new-feed-item {
-        border-left: 2px solid var(--border-color-2);
-    }
-
-    .modal-content {
-        width: 100%;
-        height: 100%;
-    }
-}
-
-.navbar-brand,
-.nav-link,
-.navbar-toggler-icon,
-#search-box:focus {
-    color: var(--text-color);
-}
-
-.nav-link {
-    margin-right: 15px;
-    transition: color 0.3s ease-in-out;
-}
-
-.nav-link:hover {
-    color: var(--primary-color);
-}
-
-.navbar-toggler {
-    border: none;
 }
 
 .navbar-collapse {
     justify-content: space-between;
 }
 
-#search-box {
-    border: 1px solid var(--border-color-1);
-    background-color: var(--secondary-bg-color);
-    color: var(--text-color);
-    transition: border-color 0.3s;
-}
-
-.btn {
-    background-color: var(--accent-color);
-    transition: background-color 0.3s, color 0.3s;
-}
-
-#search-button:hover {
-    background-color: var(--highlight-color);
-}
-
-.btn-outline-light,
-.btn-outline-secondary {
-    border-color: var(--secondary-bg-color);
-}
-
-.btn-outline-light:hover,
-.btn-outline-secondary:hover {
-    background-color: var(--highlight-color);
-}
-
-@media (min-width: 992px) {
-    .navbar .container-fluid {
-        padding-left: 5%;
-        padding-right: 5%;
-    }
-}
-
-.btn-outline-secondary {
-    color: var(--secondary-color);
-}
-
-.badge.bg-primary {
-    background: var(--secondary-color);
-}
-
 .card-separator {
     height: 1px;
-    background: var(--accent-color);
     margin: 10px 0;
 }
 
 .creator-indent {
     margin-left: 20px;
-}
-
-.title,
-.card-title,
-.modal-title {
-    color: var(--title-color);
-}
-
-.link {
-    color: var(--link-color);
 }
 
 .no-scroll {
@@ -262,31 +117,20 @@ body {
     margin-right: 5px;
 }
 
-/* Navbar */
-#navbar {
-    z-index: 1020; /* Higher than other elements */
-    background-color: var(--background-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 /* Main Flex Container */
 #main-container {
-    position: sticky;
+    height: 100vh;
+    width: 100%;
+    min-height: 100vh;
+    min-width: 100%;
     max-height: 100vh;
     max-width: 100%;
-    overflow: scroll;
-    margin: 0;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 0;
-    padding-left: 1%;
-    padding-right: 1%;
 }
 
 /* Sidebar */
-#sidebar-container {
+#sidebar-container, #feed-container {
+    height: calc(100vh - var(--navbar-height));
+    min-height: calc(100vh - var(--navbar-height));
     max-height: calc(100vh - var(--navbar-height));
     max-width: 100%;
     overflow: scroll;
@@ -294,8 +138,67 @@ body {
 
 /* Feed Container */
 #feed-container {
-    max-height: calc(100vh - var(--navbar-height));
-    max-width: 100%;
-    overflow: scroll;
     flex-grow: 1; /* Takes the remaining space */
+}
+
+/* Dark Theme Color Variables */
+:root {
+    --bg-color: #0e0e10;
+    --text-color: #fff;
+    --accent-color: #9146ff; /* Twitch's purple */
+    --navbar-height: 56px; /* Adjust as needed */
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Main Flex Container */
+#main-container {
+    min-height: 100vh;
+}
+
+/* Navbar Customization */
+.navbar {
+    background-color: var(--bg-color);
+}
+
+/* Sidebar Styling */
+#sidebar-container {
+    background-color: #18181b; /* Slightly lighter than main bg */
+}
+
+/* Feed Container */
+#feed-container {
+    background-color: var(--bg-color);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--accent-color);
+}
+
+/* Links and Buttons */
+a, .btn {
+    color: var(--accent-color);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--accent-color);
+    border-radius: 6px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    /* Styles for mobile responsiveness */
 }
