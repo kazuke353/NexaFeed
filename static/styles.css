@@ -386,3 +386,151 @@ a, .btn {
 @media (max-width: 768px) {
     /* Styles for mobile responsiveness */
 }
+
+/* Base Styles */
+button, a.nav-link, a.dropdown-toggle {
+    transition: color 0.3s, background-color 0.3s;
+    /* Adding cursor pointer for better UX */
+    cursor: pointer;
+}
+
+button:hover, a.nav-link:hover, a.dropdown-toggle:hover {
+    /* Increasing contrast for hover state for better visibility */
+    opacity: 0.9;
+}
+
+button:focus, a.nav-link:focus, a.dropdown-toggle:focus {
+    outline: 2px solid var(--latte-blue); /* Improved accessibility */
+}
+
+/* 1. Navbar */
+nav {
+    /* ... Existing styles ... */
+}
+
+button.navbar-toggler {
+    /* ... Existing styles ... */
+}
+
+/* Navbar Collapse - Improved visibility and interaction */
+div.navbar-collapse {
+    /* ... Existing styles ... */
+    /* Improve spacing for better readability */
+    padding: 0.5rem;
+}
+
+/* Nav Link - Highlighting active link for better navigation */
+a.nav-link.active {
+    background-color: var(--latte-blue);
+    color: var(--latte-base);
+}
+
+/* 2. Buttons */
+button.btn {
+    /* ... Existing styles ... */
+    /* Adjust border-radius for a modern look */
+    border-radius: 5px;
+}
+
+/* ... Remaining sections ... */
+
+/* 9. Forms */
+input.form-control {
+    /* ... Existing styles ... */
+    /* Improve form control visibility and interaction */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px; /* Rounded corners */
+}
+
+/* 10. Layout - Responsive Design Enhancements */
+@media (max-width: 768px) {
+    div.container-fluid, div.row, div.col {
+        /* Adjusting padding and margin for mobile view */
+        padding: 0.5rem;
+        margin: 0.5rem;
+    }
+}
+
+/* ... Remaining sections ... */
+
+/* Accessibility Improvements */
+a:focus, button:focus {
+    /* Ensure focus state is clearly visible */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+}
+
+/* Typography - Ensuring legible and consistent font sizing */
+body {
+    font-family: 'Open Sans', sans-serif; /* Example font */
+    line-height: 1.6; /* Improved readability */
+}
+
+/* Enhancing Lists for better structure and readability */
+ul, ol {
+    padding-left: 20px; /* Structured list indent */
+    margin-bottom: 1rem;
+}
+
+/* Table Enhancements for readability */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.75rem;
+    border: 1px solid var(--latte-mantle);
+}
+
+/* Hover Effect on Table Rows for better interactivity */
+tr:hover {
+    background-color: var(--latte-surface1);
+}
+
+/* Footer Styling for consistency */
+.footer {
+    /* ... Existing styles ... */
+    padding: 1rem 0; /* Adjust padding for balance */
+    background-color: var(--latte-mantle); /* Consistent background */
+}
+
+/* Final touch: adding smooth scroll for better experience */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Catppuccin Latte Color Scheme Variables - Optimized */
+:root {
+    --latte-base: #f2e9de; /* Unchanged, suitable for background */
+    --latte-mantle: #dcd0c0; /* Slightly darker for varied sections */
+    --latte-surface1: #c6b8a8; /* Darker for contrast against text */
+    --latte-text: #4c4f69; /* Unchanged, good for primary text */
+    --latte-subtext0: #748199; /* Darkened for better readability */
+    --latte-blue: #5a8fda; /* Deepened for better interactivity */
+    --latte-rosewater: #f5e0dc; /* Unchanged, soft accent color */
+    --latte-lavender: #a7a9ff; /* Slightly deeper for prominence */
+    --latte-green: #80d4a0; /* Darkened for highlighting new items */
+    --latte-yellow: #f8d57e; /* Darkened for better visibility */
+    --latte-red: #f05a78; /* More vivid for clear error indicators */
+}
+
+/* Example Usage: Highlighting New or Unread Items */
+.article-unread {
+    background-color: var(--latte-green);
+    color: var(--latte-base);
+}
+
+/* Example Usage: Error Messages */
+.error-message {
+    color: var(--latte-red);
+    background-color: var(--latte-rosewater);
+    border-left: 4px solid var(--latte-red);
+    padding: 8px;
+    margin: 8px 0;
+}
+
+/* Example Usage: Dark Mode Toggle */
+.dark-mode {
+    background-color: #333; /* Example dark background */
+    color: #fff; /* Example light text for contrast */
+}
