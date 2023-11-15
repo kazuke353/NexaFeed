@@ -1,128 +1,67 @@
+<!-- Dark theme with Bootstrap -->
+<div class="text-light bg-dark">
 
-<!-- Center-aligned search -->
-<div class="mx-auto">
-    <input
-        type="text"
-        id="search-box"
-        placeholder="Search..."
-        class="form-control"
-    />
-    <button
-        id="search-button"
-        class="btn btn-outline-secondary ml-2"
-        x-on:click="search()"
-    >
-        <i class="fas fa-search"></i>
-    </button>
-</div>
-
-<div class="d-flex align-items-center">
-    <a
-        href="https://aniwave.to/user/watch-list?folder=1&keyword=&sort=recently_updated"
-        target="_blank"
-        class="btn btn-outline-light ml-2"
-    >
-        <img
-            src="https://s2.bunnycdn.ru/assets/sites/aniwave/favicon1.png"
-            alt="Aniwave"
-            style="width: 20px; height: 20px"
-        />
-    </a>
-    <a
-        href="https://myanimelist.net/anime/season"
-        target="_blank"
-        class="btn btn-outline-light ml-2"
-    >
-        <img
-            src="https://cdn.myanimelist.net/images/favicon.ico"
-            alt="MyAnimeList"
-            style="width: 20px; height: 20px"
-        />
-    </a>
-    <a
-        href="https://discord.com/app"
-        target="_blank"
-        class="btn btn-outline-light ml-2"
-    >
-        <img
-            src="https://discord.com/assets/images/favicon.ico"
-            alt="Discord"
-            style="width: 20px; height: 20px"
-        />
-    </a>
-    <a
-        href="https://chat.openai.com/"
-        target="_blank"
-        class="btn btn-outline-light ml-2"
-    >
-        <img
-            src="https://cdn.oaistatic.com/_next/static/media/favicon-32x32.be48395e.png"
-            alt="ChatGPT"
-            style="width: 20px; height: 20px"
-        />
-    </a>
-</div>
-
-<!-- Add category button -->
-<button class="btn btn-primary btn-sm rounded-circle" @click="addCategory">
-    <i class="fas fa-plus"></i>
-</button>
-
-<!-- Category list -->
-<ul class="list-unstyled ps-0" style="padding-top: 50px;" x-show="$store.sharedState != null && $store.sharedState.categories != null && $store.sharedState.categories.length > 0">
-    <template x-for="category in $store.sharedState.categories" :key="category.id">
-        <li class="mb-1">
-            <!-- Category name -->
-            <button class="btn btn-toggle btn-block text-left rounded collapsed" style="background-color: #f8f9fa;" data-toggle="collapse" data-target="#category-1" aria-expanded="false" @click="category.expanded = !category.expanded; fetchFeeds(category)">
-                <i class="fas fa-chevron-right"></i>
-                <span x-text="category.name"></span>
-                <i class="fas fa-times float-right"></i>
-            </button>
-            <div class="collapse" id="category-1">
-                <!-- Content for each category -->
-                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li><a href="#" class="link-dark rounded">Sub-item</a></li>
-                </ul>
+    <!-- Center-aligned search with responsive adjustments -->
+    <div class="row justify-content-center my-3">
+        <div class="col-12 col-md-6">
+            <div class="input-group">
+                <input type="text" id="search-box" placeholder="Search..." class="form-control" />
+                <button id="search-button" class="btn btn-outline-secondary">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
+        </div>
+    </div>
 
-            <!-- Feed list -->
-            <div x-show="category.expanded">
-                <ul class="list-group">
-                    <!-- Add feed button -->
-                    <li class="list-group-item">
-                        <button class="btn btn-primary btn-sm rounded-circle me-2" @click="addFeed(category)">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-sm rounded-circle" @click="importOPML(category)">
-                            <i class="fas fa-file-upload"></i>
-                        </button>
-                    </li>
-                    <li class="list-group-item" x-show="!category.feeds">
-                        <a class="link-dark rounded" x-on:click="goBack(category.id)">
-                            <span>Loading feeds...</span>
-                        </a>
-                    </li>
-                    <div x-show="category.feeds && category.feeds.length > 0">
-                        <li class="list-group-item">
-                            <a class="link-dark rounded" x-on:click="goBack(category.id)">
-                                <i class="fas fa-rss me-2"></i>
-                                <span>All Feeds</span>
-                            </a>
-                        </li>
-                        <template x-for="feed in category.feeds" :key="feed.id">
-                            <li class="list-group-item">
-                                <a class="link-dark rounded d-flex justify-content-between align-items-center" x-on:click="search(feed.url, category.id)">
-                                    <span>
-                                        <i class="fas fa-rss me-2"></i>
-                                        <span x-text="feed.name"></span>
-                                    </span>
-                                    <i class="fas fa-times" x-on:click.stop="removeFeed(category, feed)"></i>
-                                </a>
-                            </li>
-                        </template>
+    <!-- Icon Buttons with responsive layout -->
+    <div class="d-flex flex-wrap justify-content-center mb-3">
+        <!-- Add your links here -->
+    </div>
+
+    <!-- Add category button -->
+    <div class="d-flex justify-content-center mb-3">
+        <button class="btn btn-primary btn-sm rounded-circle" @click="addCategory">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Responsive Category list -->
+    <div class="d-flex justify-content-center">
+        <ul class="list-unstyled ps-0" style="max-width: 100%;">
+            <template x-for="category in $store.sharedState.categories" :key="category.id">
+                <li class="mb-1">
+                    <!-- Category name with responsive toggle -->
+                    <button class="btn btn-toggle btn-block text-left rounded collapsed bg-secondary" data-toggle="collapse" :data-target="'#category-' + category.id" aria-expanded="false" @click="category.expanded = !category.expanded; fetchFeeds(category)">
+                        <i class="fas fa-chevron-right"></i>
+                        <span x-text="category.name"></span>
+                        <i class="fas fa-times float-right"></i>
+                    </button>
+                    <div class="collapse" :id="'category-' + category.id">
+                        <!-- Content for each category -->
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            <li><a href="#" class="link-light rounded">Sub-item</a></li>
+                        </ul>
                     </div>
-                </ul>                    
-            </div>
-        </li>
-    </template>
-</ul>
+
+                    <!-- Feed list with responsive design -->
+                    <div x-show="category.expanded">
+                        <ul class="list-group">
+                            <!-- Feeds -->
+                            <template x-for="feed in category.feeds" :key="feed.id">
+                                <li class="list-group-item bg-dark">
+                                    <a class="link-light rounded d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="fas fa-rss me-2"></i>
+                                            <span x-text="feed.name"></span>
+                                        </span>
+                                        <i class="fas fa-times" x-on:click.stop="removeFeed(category, feed)"></i>
+                                    </a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </li>
+            </template>
+        </ul>
+    </div>
+</div>
