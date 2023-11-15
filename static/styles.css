@@ -16,12 +16,14 @@
 /* Base Styles */
 button, a.nav-link, a.dropdown-toggle {
     transition: color 0.3s, background-color 0.3s;
+    cursor: pointer; /* Adding cursor pointer for better UX */
 }
 button:hover, a.nav-link:hover, a.dropdown-toggle:hover {
-    opacity: 0.8;
+    opacity: 0.9; /* Increasing contrast for hover state for better visibility */
 }
 button:focus, a.nav-link:focus, a.dropdown-toggle:focus {
     outline: none; /* Customize as needed for accessibility */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Ensure focus state is clearly visible */
 }
 
 /* 1. Navbar */
@@ -33,23 +35,18 @@ button.navbar-toggler {
     background-color: var(--latte-surface1);
     color: var(--latte-text);
 }
-div.navbar-collapse {
-    background-color: var(--latte-mantle);
-}
 a.nav-link {
     color: var(--latte-blue);
 }
-div.dropdown {
-    background-color: var(--latte-surface1);
+a.nav-link.active {
+    background-color: var(--latte-blue);
+    color: var(--latte-base);
 }
+
+/* Dropdown */
 div.dropdown-menu {
     background-color: var(--latte-surface1);
     color: var(--latte-text);
-}
-@media (max-width: 768px) {
-    nav {
-        /* Styles for mobile view */
-    }
 }
 
 /* 2. Buttons */
@@ -57,6 +54,7 @@ button.btn {
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     background-color: var(--latte-blue);
     color: var(--latte-base);
+    border-radius: 5px; /* Adjust border-radius for a modern look */
 }
 button.btn-outline {
     border-color: var(--latte-blue);
@@ -81,17 +79,6 @@ div.card {
     background-color: var(--latte-base);
     color: var(--latte-text);
 }
-div.card-img-top {
-    background-color: var(--latte-mantle);
-}
-div.card-trigger {
-    background-color: var(--latte-lavender);
-    color: var(--latte-base);
-}
-div.card-info {
-    background-color: var(--latte-surface1);
-    color: var(--latte-text);
-}
 div.card-footer {
     background-color: var(--latte-mantle);
     color: var(--latte-subtext0);
@@ -100,39 +87,21 @@ div.card-footer {
 /* 5. List Items */
 ul.list-unstyled {
     background-color: var(--latte-base);
+    padding-left: 20px; /* Structured list indent */
 }
 li.mb-1 {
     color: var(--latte-text);
 }
 
-/* 6. Dropdowns */
-a.dropdown-toggle {
-    color: var(--latte-blue);
-}
-div.dropdown-menu {
-    background-color: var(--latte-surface1);
-    color: var(--latte-text);
-}
-
 /* 7. Modals */
-div.modal-dialog {
-    background-color: var(--latte-base);
+div.modal-header, div.modal-footer {
+    background-color: var(--latte-mantle);
+    color: var(--latte-text);
 }
 div.modal-content {
     background-color: var(--latte-base);
     color: var(--latte-text);
-}
-div.modal-header {
-    background-color: var(--latte-mantle);
-    color: var(--latte-text);
-}
-div.modal-body {
-    background-color: var(--latte-base);
-    color: var(--latte-text);
-}
-div.modal-footer {
-    background-color: var(--latte-mantle);
-    color: var(--latte-text);
+    z-index: 1001;
 }
 
 /* 8. Badges */
@@ -140,28 +109,34 @@ span.badge {
     background-color: var(--latte-blue);
     color: var(--latte-base);
 }
+
 span.badge-primary {
     background-color: var(--latte-lavender);
-    color: var(--latte-base);
 }
+
 span.badge-secondary {
     background-color: var(--latte-mantle);
-    color: var(--latte-text);
 }
 
 /* 9. Forms */
 input.form-control {
-    /* Include existing styles if any */
     border: 1px solid var(--latte-lavender);
     padding: 8px;
     background-color: var(--latte-surface1);
     color: var(--latte-text);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
 }
 
 /* 10. Layout */
 @media (max-width: 768px) {
+    nav {
+        /* Styles for mobile view */
+    }
     div.container-fluid, div.row, div.col {
-        /* Styles for mobile view - customize as necessary */
+        /* Adjusting padding and margin for mobile view */
+        padding: 0.5rem;
+        margin: 0.5rem;
     }
 }
 
@@ -182,123 +157,12 @@ img {
     border-color: var(--latte-lavender);
 }
 
-.card-thumbnail {
-    width: 100%;
-    height: auto;
-}
-
-.modal-content {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    height: 100%;
-    width: 100%;
-    max-height: 100%;
-    max-width: 100%;
-    padding: 20px 20px 50px;
-    z-index: 1001;
-    transform: translate(-50%, -50%);
-}
-
-.footer,
-.card-footer,
-.modal-footer {
-    width: 100%;
-}
-
 .footer {
     text-align: center;
     padding: 10px;
     margin-top: auto;
+    background-color: var(--latte-mantle); /* Consistent background */
     font-size: clamp(16px, 1em, 100%);
-}
-
-.iframe-container {
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-    height: auto;
-    padding-top: 56.25%
-}
-
-.iframe-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%
-}
-
-.card-footer,
-.modal-footer {
-    position: relative;
-}
-
-.card-footer {
-    margin-top: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-body {
-    max-height: calc(100% - 50px);
-    overflow-y: auto;
-    position: relative
-}
-
-.modal-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 50px;
-}
-
-.navbar-collapse {
-    justify-content: space-between;
-}
-
-.card-separator {
-    height: 1px;
-    margin: 10px 0;
-}
-
-.creator-indent {
-    margin-left: 20px;
-}
-
-.no-scroll {
-    overflow: hidden;
-    height: 100%
-}
-
-.card {
-    position: relative;
-    box-sizing: border-box;
-}
-
-.card-text {
-    overflow: hidden;
-}
-
-.badge-truncate {
-    display: inline-block;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-#notification {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1021;
-    cursor: pointer;
-}
-
-#notification i {
-    margin-right: 5px;
 }
 
 /* Main Flex Container */
@@ -316,13 +180,7 @@ img {
     height: calc(100vh - var(--navbar-height));
     min-height: calc(100vh - var(--navbar-height));
     max-height: calc(100vh - var(--navbar-height));
-    max-width: 100%;
     overflow: scroll;
-}
-
-/* Feed Container */
-#feed-container {
-    flex-grow: 1; /* Takes the remaining space */
 }
 
 /* Dark Theme Color Variables */
@@ -336,6 +194,9 @@ img {
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
+    font-family: 'Open Sans', sans-serif; /* Example font */
+    line-height: 1.6; /* Improved readability */
+    scroll-behavior: smooth;
 }
 
 /* Main Flex Container */
@@ -346,11 +207,6 @@ body {
 /* Navbar Customization */
 .navbar {
     background-color: var(--bg-color);
-}
-
-/* Sidebar Styling */
-#sidebar-container {
-    background-color: #18181b; /* Slightly lighter than main bg */
 }
 
 /* Feed Container */
@@ -382,95 +238,6 @@ a, .btn {
     border-radius: 6px;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    /* Styles for mobile responsiveness */
-}
-
-/* Base Styles */
-button, a.nav-link, a.dropdown-toggle {
-    transition: color 0.3s, background-color 0.3s;
-    /* Adding cursor pointer for better UX */
-    cursor: pointer;
-}
-
-button:hover, a.nav-link:hover, a.dropdown-toggle:hover {
-    /* Increasing contrast for hover state for better visibility */
-    opacity: 0.9;
-}
-
-button:focus, a.nav-link:focus, a.dropdown-toggle:focus {
-    outline: 2px solid var(--latte-blue); /* Improved accessibility */
-}
-
-/* 1. Navbar */
-nav {
-    /* ... Existing styles ... */
-}
-
-button.navbar-toggler {
-    /* ... Existing styles ... */
-}
-
-/* Navbar Collapse - Improved visibility and interaction */
-div.navbar-collapse {
-    /* ... Existing styles ... */
-    /* Improve spacing for better readability */
-    padding: 0.5rem;
-}
-
-/* Nav Link - Highlighting active link for better navigation */
-a.nav-link.active {
-    background-color: var(--latte-blue);
-    color: var(--latte-base);
-}
-
-/* 2. Buttons */
-button.btn {
-    /* ... Existing styles ... */
-    /* Adjust border-radius for a modern look */
-    border-radius: 5px;
-}
-
-/* ... Remaining sections ... */
-
-/* 9. Forms */
-input.form-control {
-    /* ... Existing styles ... */
-    /* Improve form control visibility and interaction */
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 4px; /* Rounded corners */
-}
-
-/* 10. Layout - Responsive Design Enhancements */
-@media (max-width: 768px) {
-    div.container-fluid, div.row, div.col {
-        /* Adjusting padding and margin for mobile view */
-        padding: 0.5rem;
-        margin: 0.5rem;
-    }
-}
-
-/* ... Remaining sections ... */
-
-/* Accessibility Improvements */
-a:focus, button:focus {
-    /* Ensure focus state is clearly visible */
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
-}
-
-/* Typography - Ensuring legible and consistent font sizing */
-body {
-    font-family: 'Open Sans', sans-serif; /* Example font */
-    line-height: 1.6; /* Improved readability */
-}
-
-/* Enhancing Lists for better structure and readability */
-ul, ol {
-    padding-left: 20px; /* Structured list indent */
-    margin-bottom: 1rem;
-}
-
 /* Table Enhancements for readability */
 table {
     width: 100%;
@@ -479,7 +246,6 @@ table {
 
 th, td {
     padding: 0.75rem;
-    border: 1px solid var(--latte-mantle);
 }
 
 /* Hover Effect on Table Rows for better interactivity */
@@ -487,50 +253,18 @@ tr:hover {
     background-color: var(--latte-surface1);
 }
 
-/* Footer Styling for consistency */
-.footer {
-    /* ... Existing styles ... */
-    padding: 1rem 0; /* Adjust padding for balance */
-    background-color: var(--latte-mantle); /* Consistent background */
+/* Modals */
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    padding: 20px 20px 50px;
+    transform: translate(-50%, -50%);
 }
 
-/* Final touch: adding smooth scroll for better experience */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Catppuccin Latte Color Scheme Variables - Optimized */
-:root {
-    --latte-base: #f2e9de; /* Unchanged, suitable for background */
-    --latte-mantle: #dcd0c0; /* Slightly darker for varied sections */
-    --latte-surface1: #c6b8a8; /* Darker for contrast against text */
-    --latte-text: #4c4f69; /* Unchanged, good for primary text */
-    --latte-subtext0: #748199; /* Darkened for better readability */
-    --latte-blue: #5a8fda; /* Deepened for better interactivity */
-    --latte-rosewater: #f5e0dc; /* Unchanged, soft accent color */
-    --latte-lavender: #a7a9ff; /* Slightly deeper for prominence */
-    --latte-green: #80d4a0; /* Darkened for highlighting new items */
-    --latte-yellow: #f8d57e; /* Darkened for better visibility */
-    --latte-red: #f05a78; /* More vivid for clear error indicators */
-}
-
-/* Example Usage: Highlighting New or Unread Items */
-.article-unread {
-    background-color: var(--latte-green);
-    color: var(--latte-base);
-}
-
-/* Example Usage: Error Messages */
-.error-message {
-    color: var(--latte-red);
-    background-color: var(--latte-rosewater);
-    border-left: 4px solid var(--latte-red);
-    padding: 8px;
-    margin: 8px 0;
-}
-
-/* Example Usage: Dark Mode Toggle */
-.dark-mode {
-    background-color: #333; /* Example dark background */
-    color: #fff; /* Example light text for contrast */
+.modal-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 50px;
 }
