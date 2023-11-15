@@ -1,3 +1,187 @@
+/* Catppuccin Latte Color Scheme Variables */
+:root {
+    --latte-base: #f2e9de;
+    --latte-mantle: #e0d6cd;
+    --latte-surface1: #cec4ba;
+    --latte-text: #4c4f69;
+    --latte-subtext0: #a6adc8;
+    --latte-blue: #89b4fa;
+    --latte-rosewater: #f5e0dc;
+    --latte-lavender: #c9cbff;
+    --latte-green: #abe9b3;
+    --latte-yellow: #f9e2af;
+    --latte-red: #f28fad;
+}
+
+/* Base Styles */
+button, a.nav-link, a.dropdown-toggle {
+    transition: color 0.3s, background-color 0.3s;
+}
+button:hover, a.nav-link:hover, a.dropdown-toggle:hover {
+    opacity: 0.8;
+}
+button:focus, a.nav-link:focus, a.dropdown-toggle:focus {
+    outline: none; /* Customize as needed for accessibility */
+}
+
+/* 1. Navbar */
+nav {
+    background-color: var(--latte-base);
+    color: var(--latte-text);
+}
+button.navbar-toggler {
+    background-color: var(--latte-surface1);
+    color: var(--latte-text);
+}
+div.navbar-collapse {
+    background-color: var(--latte-mantle);
+}
+a.nav-link {
+    color: var(--latte-blue);
+}
+div.dropdown {
+    background-color: var(--latte-surface1);
+}
+div.dropdown-menu {
+    background-color: var(--latte-surface1);
+    color: var(--latte-text);
+}
+@media (max-width: 768px) {
+    nav {
+        /* Styles for mobile view */
+    }
+}
+
+/* 2. Buttons */
+button.btn {
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    background-color: var(--latte-blue);
+    color: var(--latte-base);
+}
+button.btn-outline {
+    border-color: var(--latte-blue);
+    color: var(--latte-blue);
+}
+button.btn-light {
+    background-color: var(--latte-mantle);
+    color: var(--latte-text);
+}
+button.btn-toggle {
+    background-color: var(--latte-lavender);
+    color: var(--latte-base);
+}
+
+/* 3. Icons */
+i.fas {
+    color: var(--latte-lavender);
+}
+
+/* 4. Cards */
+div.card {
+    background-color: var(--latte-base);
+    color: var(--latte-text);
+}
+div.card-img-top {
+    background-color: var(--latte-mantle);
+}
+div.card-trigger {
+    background-color: var(--latte-lavender);
+    color: var(--latte-base);
+}
+div.card-info {
+    background-color: var(--latte-surface1);
+    color: var(--latte-text);
+}
+div.card-footer {
+    background-color: var(--latte-mantle);
+    color: var(--latte-subtext0);
+}
+
+/* 5. List Items */
+ul.list-unstyled {
+    background-color: var(--latte-base);
+}
+li.mb-1 {
+    color: var(--latte-text);
+}
+
+/* 6. Dropdowns */
+a.dropdown-toggle {
+    color: var(--latte-blue);
+}
+div.dropdown-menu {
+    background-color: var(--latte-surface1);
+    color: var(--latte-text);
+}
+
+/* 7. Modals */
+div.modal-dialog {
+    background-color: var(--latte-base);
+}
+div.modal-content {
+    background-color: var(--latte-base);
+    color: var(--latte-text);
+}
+div.modal-header {
+    background-color: var(--latte-mantle);
+    color: var(--latte-text);
+}
+div.modal-body {
+    background-color: var(--latte-base);
+    color: var(--latte-text);
+}
+div.modal-footer {
+    background-color: var(--latte-mantle);
+    color: var(--latte-text);
+}
+
+/* 8. Badges */
+span.badge {
+    background-color: var(--latte-blue);
+    color: var(--latte-base);
+}
+span.badge-primary {
+    background-color: var(--latte-lavender);
+    color: var(--latte-base);
+}
+span.badge-secondary {
+    background-color: var(--latte-mantle);
+    color: var(--latte-text);
+}
+
+/* 9. Forms */
+input.form-control {
+    /* Include existing styles if any */
+    border: 1px solid var(--latte-lavender);
+    padding: 8px;
+    background-color: var(--latte-surface1);
+    color: var(--latte-text);
+}
+
+/* 10. Layout */
+@media (max-width: 768px) {
+    div.container-fluid, div.row, div.col {
+        /* Styles for mobile view - customize as necessary */
+    }
+}
+
+div.container-fluid {
+    background-color: var(--latte-base);
+}
+
+div.row {
+    background-color: var(--latte-mantle);
+}
+
+div.col {
+    background-color: var(--latte-surface1);
+}
+
+/* 11. Miscellaneous */
+img {
+    border-color: var(--latte-lavender);
+}
+
 .card-thumbnail {
     width: 100%;
     height: auto;
