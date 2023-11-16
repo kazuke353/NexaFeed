@@ -1,67 +1,67 @@
-<!-- Dark theme with Bootstrap -->
-<div class="text-light bg-dark">
-
-    <!-- Center-aligned search with responsive adjustments -->
-    <div class="row justify-content-center my-3">
-        <div class="col-12 col-md-6">
-            <div class="input-group">
-                <input type="text" id="search-box" placeholder="Search..." class="form-control" />
-                <button id="search-button" class="btn btn-outline-secondary">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
+<!-- Center-aligned search with visibility adjustments for bg-dark opacity-75 sidebar -->
+<div class="row justify-content-center mb-4">
+    <div class="col-12 col-md-8">
+        <div class="input-group input-group-lg">
+            <span class="input-group-text bg-light border-0">
+                <i class="fas fa-search text-dark"></i>
+            </span>
+            <input 
+                type="text" 
+                id="search-box" 
+                class="form-control bg-light text-dark border-0 shadow-sm" 
+                placeholder="Search..."
+                aria-label="Search"
+                x-on:input.debounce.300ms="search()"
+                style="border-radius: 0.25rem;"
+            >
         </div>
     </div>
+</div>
 
-    <!-- Icon Buttons with responsive layout -->
-    <div class="d-flex flex-wrap justify-content-center mb-3">
-        <!-- Add your links here -->
-    </div>
+<!-- Icon Buttons with minimalist layout -->
+<div class="d-flex flex-column align-items-center mb-4">
+    <button class="btn text-light mb-2 w-100 d-flex align-items-center justify-content-start">
+        <i class="fas fa-home me-2"></i> Home
+    </button>
+    <!-- Additional icon buttons here -->
+</div>
 
-    <!-- Add category button -->
-    <div class="d-flex justify-content-center mb-3">
-        <button class="btn btn-primary btn-sm rounded-circle" @click="addCategory">
-            <i class="fas fa-plus"></i>
-        </button>
-    </div>
+<!-- Enhanced Add Category Button -->
+<div class="text-center mb-4">
+    <button class="btn text-light d-flex align-items-center justify-content-center">
+        <i class="fas fa-plus me-2"></i> Add Category
+    </button>
+</div>
 
-    <!-- Responsive Category list -->
-    <div class="d-flex justify-content-center">
-        <ul class="list-unstyled ps-0" style="max-width: 100%;">
-            <template x-for="category in $store.sharedState.categories" :key="category.id">
-                <li class="mb-1">
-                    <!-- Category name with responsive toggle -->
-                    <button class="btn btn-toggle btn-block text-left rounded collapsed bg-secondary" data-toggle="collapse" :data-target="'#category-' + category.id" aria-expanded="false" @click="category.expanded = !category.expanded; fetchFeeds(category)">
-                        <i class="fas fa-chevron-right"></i>
-                        <span x-text="category.name"></span>
-                        <i class="fas fa-times float-right"></i>
-                    </button>
-                    <div class="collapse" :id="'category-' + category.id">
-                        <!-- Content for each category -->
-                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                            <li><a href="#" class="link-light rounded">Sub-item</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Feed list with responsive design -->
-                    <div x-show="category.expanded">
-                        <ul class="list-group">
-                            <!-- Feeds -->
-                            <template x-for="feed in category.feeds" :key="feed.id">
-                                <li class="list-group-item bg-dark">
-                                    <a class="link-light rounded d-flex justify-content-between align-items-center">
-                                        <span>
-                                            <i class="fas fa-rss me-2"></i>
-                                            <span x-text="feed.name"></span>
-                                        </span>
-                                        <i class="fas fa-times" x-on:click.stop="removeFeed(category, feed)"></i>
-                                    </a>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
-                </li>
-            </template>
-        </ul>
-    </div>
+<!-- Improved Responsive Category List with a modern style -->
+<div class="accordion" id="categoryAccordion">
+    <template x-for="category in $store.sharedState.categories" :key="category.id">
+        <div class="accordion-item bg-transparent">
+            <h2 class="accordion-header" :id="'heading' + category.id">
+                <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + category.id" @click="fetchFeeds(category)">
+                    <i class="fas fa-chevron-down me-2"></i>
+                    <span x-text="category.name"></span>
+                </button>
+            </h2>
+            <div :id="'collapse' + category.id" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#categoryAccordion">
+                <div class="accordion-body bg-transparent">
+                    <ul class="list-group list-group-flush">
+                        <!-- Category Feeds Here -->
+                        <!-- Example feed item -->
+                        <li class="list-group-item bg-transparent text-light">
+                            <i class="fas fa-rss me-2"></i> All Feeds
+                        </li>
+                        <!-- Feeds template -->
+                        <template x-for="feed in category.feeds" :key="feed.id">
+                            <li class="list-group-item bg-transparent text-light">
+                                <i class="fas fa-rss me-2"></i>
+                                <span x-text="feed.name"></span>
+                                <i class="fas fa-times float-end"></i>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>

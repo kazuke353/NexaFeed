@@ -181,7 +181,7 @@ document.addEventListener('alpine:init', () => {
             if (!fetchedEntries) {
                 return false;
             }
-            
+
             const currentEntries = this.feedCache[Alpine.store("sharedState").getCurrentCategory()];
             if (!currentEntries) {
                 return true;
@@ -272,6 +272,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openModal: function (item) {
+            console.log("SEX: ", item)
             item.open = true;
             this.toggleScroll(false);
             if (!item.contentFormatted) {

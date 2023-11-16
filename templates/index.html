@@ -18,33 +18,19 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
     </head>
 
-    <body x-data="sharedData()" x-init="fetch()" class="bg-dark text-white">
-        <div class="container-fluid bg-dark" id="main-container">
-            <div class="container-fluid" x-data="feedManager()">
+    <body x-data="sharedData()" x-init="fetch()" class="bg-secondary text-white">
+        <div class="container-fluid vh-100" id="main-container" x-data="feedManager()">
                 <div class="row" id="page">    
                     <!-- Sidebar Include -->
-                    <div class="col-md-1 bg-secondary" x-data="sidebarManager()">
-                        <div id="sidebar" class="bg-light border-right d-md-block d-none">
-                            <div id="sidebar-container">
-                                <!-- Content for larger screens (non-collapsible sidebar) -->
-                                {% include 'sidebar.html' %}
-                            </div>
+                    <div id="sidebar" class="border-right col-md-2 bg-dark p-3 opacity-75" x-data="sidebarManager()">
+                        <div id="sidebar-container" class="vh-100 overflow-auto text-light">
+                            <!-- Content for larger screens (non-collapsible sidebar) -->
+                            {% include 'sidebar.html' %}
                         </div>
-                        
-                        <nav id="navbar" class="navbar navbar-expand-md d-md-none d-flex bg-light">
-                            <!-- Content for smaller screens (collapsible navbar) -->
-                            <button class="navbar-toggler" type="button" x-on:click="open = !open" aria-controls="sidebarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-                                <span class="navbar-toggler-icon"></span>
-                            </button>
-                        
-                            <div x-show="open" id="sidebarCollapse">
-                                {% include 'sidebar.html' %}
-                            </div>
-                        </nav>
                     </div>
     
                     <!-- Main Content Area -->
-                    <div class="col bg-light" id="feed-container" x-init="initFeed()" @scroll="handleScroll">
+                    <div class="col" id="feed-container" x-init="initFeed()">
                         <!-- Notification -->
                         <div id="notification" class="alert alert-info d-none" role="alert">
                             <i class="fas fa-bell"></i> New feeds available! Click to reset and load the new feeds.
@@ -52,13 +38,13 @@
     
                         <!-- Feed Container -->
                         <div x-show="$store.sharedState != null && $store.sharedState.feed_items != null && $store.sharedState.feed_items.length > 0">
-                            <div id="feed-container-inner" class="row feed-container bg-white">
+                            <div id="feed-container-inner" class="row feed-container bg-dark vh-100 overflow-auto" @scroll="handleScroll">
                                 {% include 'feed.html' %}
                             </div>
                         </div>
     
                         <!-- Spinner -->
-                        <div id="spinner" class="page-load-status d-flex justify-content-center align-items-center bg-light" style="display: none" role="status">
+                        <div id="spinner" class="page-load-status d-flex justify-content-center align-items-center" style="display: none" role="status">
                             <div x-show="loading" class="spinner-border text-primary" role="status"></div>
                         </div>
                     </div>

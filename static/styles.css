@@ -23,6 +23,42 @@
     --outline-focus: 0 0 0 3px rgba(100, 100, 200, 0.5); /* Accessible focus state */
 }
 
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    height: 100%;
+    width: 100%;
+    padding: 20px 20px 50px;
+    z-index: 1001;
+    transform: translate(-50%, -50%);
+}
+
+.iframe-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+.responsive-iframe iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.sticky-bottom {
+    position: sticky;
+    bottom: 0;
+}
+
+.no-scroll {
+    overflow: hidden;
+    height: 100%
+}
+
 /* Base Styles */
 button, a.nav-link, a.dropdown-toggle {
     transition: var(--transition-base);
@@ -273,10 +309,4 @@ button:hover, a.nav-link:hover, a.dropdown-toggle:hover {
 
 .border-rounded {
     border-radius: var(--border-radius-base);
-}
-
-/* Accessibility Improvement: increased contrast ratio for improved readability */
-.btn, .nav-link, .form-control, .badge {
-    contrast-ratio: 4.5:1; /* Minimum contrast ratio for text content */
-    /* Use CSS functions and checks to enforce this rule */
 }
