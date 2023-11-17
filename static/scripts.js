@@ -434,12 +434,6 @@ function adjustCardSizesAndTruncateText(cardsPerRow, rowsInView) {
 }
 
 function handleResize() {
-  const navbarHeight = document.getElementById("navbar").offsetHeight;
-  document.documentElement.style.setProperty(
-    "--navbar-height",
-    `${navbarHeight}px`
-  );
-
   let cardsPerRow = 4;
   let rowsInView = 2;
   if (window.innerWidth < 1200 && window.innerWidth >= 768) {
@@ -453,6 +447,6 @@ function handleResize() {
   adjustCardSizesAndTruncateText(cardsPerRow, rowsInView);
 }
 
-document.addEventListener("DOMContentLoaded", () => handleResize());
-window.addEventListener("load", () => handleResize());
-window.addEventListener("resize", () => handleResize());
+//document.addEventListener("DOMContentLoaded", () => handleResize());
+//window.addEventListener("load", () => handleResize());
+//window.addEventListener("resize", () => handleResize());

@@ -23,7 +23,8 @@ class Feed:
         # Final Query
         query, params = query_builder.build()
         feeds = await self.db_manager.select_data("feeds", query, params)
-        self.urls[category] = [feed['url'] for feed in feeds]
+        if feeds:
+            self.urls[category] = [feed['url'] for feed in feeds]
         return feeds
 
     async def add_category(self, category_name):
@@ -57,12 +58,16 @@ class Feed:
         # Ensure the category exists in the dictionary and has a list initialized
         if category not in self.urls:
             await self.get_feeds(category)
+        # If still None cancel
+        if category not in self.urls:
+            return False
 
         pool = await self.db_manager.get_pool()
         try:
             failed_urls, rate_limited_urls = await self.rss_fetcher.fetch_feeds(category, self.urls[category], pool)
         except ValueError:
             print("Error: init_fetch did not return enough values.")
+            return False
         
         if rate_limited_urls:
             return False

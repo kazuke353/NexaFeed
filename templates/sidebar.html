@@ -1,67 +1,109 @@
-<!-- Center-aligned search with visibility adjustments for bg-dark opacity-75 sidebar -->
-<div class="row justify-content-center mb-4">
-    <div class="col-12 col-md-8">
-        <div class="input-group input-group-lg">
-            <span class="input-group-text bg-light border-0">
-                <i class="fas fa-search text-dark"></i>
-            </span>
-            <input 
-                type="text" 
-                id="search-box" 
-                class="form-control bg-light text-dark border-0 shadow-sm" 
-                placeholder="Search..."
-                aria-label="Search"
-                x-on:input.debounce.300ms="search()"
-                style="border-radius: 0.25rem;"
-            >
+<div id="sidebar" class="border-right col-md-2 bg-dark p-3 opacity-75" x-data="sidebarManager()">
+    <div id="sidebar-container" class="vh-100 overflow-auto text-light">
+        <!-- Content for larger screens (non-collapsible sidebar) -->
+        <nav class="row justify-content-center mb-4">
+            <div class="col-12 col-lg-8">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-light border-0">
+                        <i class="fas fa-search text-dark"></i>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="search-box" 
+                        class="form-control bg-light text-dark border-0 shadow-sm rounded" 
+                        placeholder="Search..."
+                        aria-label="Search"
+                        x-on:input.debounce.500ms="search()"
+                    >
+                </div>
+            </div>
+        </nav>
+
+        <section class="d-flex flex-column align-items-center mb-4">
+            <button class="btn btn-primary mb-2 w-100 align-items-center justify-content-start">
+                <i class="fas fa-home me-2"></i> Home
+            </button>
+        </section>
+
+        <div class="text-center mb-4">
+            <button class="btn btn-secondary d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="fas fa-plus me-2"></i> Add Category
+            </button>
+        </div>
+
+        <div x-show="$store.sharedState != null && $store.sharedState.categories != null && $store.sharedState.categories.length > 0">
+            <section class="accordion" id="categoryAccordion">
+                <template x-for="category in $store.sharedState.categories" :key="category.id">
+                    <article class="accordion-item bg-transparent">
+                        <h2 class="accordion-header d-flex justify-content-between align-items-center" :id="'heading' + category.id">
+                            <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + category.id" @click="fetchFeeds(category)" aria-expanded="false" :aria-controls="'collapse' + category.id">
+                                <i class="fas fa-chevron-down me-2"></i>
+                                <span x-text="category.name"></span>
+                            </button>
+                            <div>
+                                <i class="fas fa-plus me-2" @click="selectedCategory = category" data-bs-toggle="modal" data-bs-target="#addFeedModal"></i>
+                                <i class="fas fa-times" @click="removeCategory(category)"></i>
+                            </div>
+                        </h2>
+                        <div :id="'collapse' + category.id" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#categoryAccordion">
+                            <div class="accordion-body bg-transparent">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item bg-transparent text-light">
+                                        <i class="fas fa-rss me-2"></i> All Feeds
+                                    </li>
+                                    <template x-for="feed in category.feeds" :key="feed.id">
+                                        <li class="list-group-item bg-transparent text-light">
+                                            <i class="fas fa-rss me-2"></i>
+                                            <span x-text="feed.name"></span>
+                                            <i class="fas fa-times float-end"></i>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                    </article>
+                </template>
+            </section>
         </div>
     </div>
-</div>
-
-<!-- Icon Buttons with minimalist layout -->
-<div class="d-flex flex-column align-items-center mb-4">
-    <button class="btn text-light mb-2 w-100 d-flex align-items-center justify-content-start">
-        <i class="fas fa-home me-2"></i> Home
-    </button>
-    <!-- Additional icon buttons here -->
-</div>
-
-<!-- Enhanced Add Category Button -->
-<div class="text-center mb-4">
-    <button class="btn text-light d-flex align-items-center justify-content-center">
-        <i class="fas fa-plus me-2"></i> Add Category
-    </button>
-</div>
-
-<!-- Improved Responsive Category List with a modern style -->
-<div class="accordion" id="categoryAccordion">
-    <template x-for="category in $store.sharedState.categories" :key="category.id">
-        <div class="accordion-item bg-transparent">
-            <h2 class="accordion-header" :id="'heading' + category.id">
-                <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + category.id" @click="fetchFeeds(category)">
-                    <i class="fas fa-chevron-down me-2"></i>
-                    <span x-text="category.name"></span>
-                </button>
-            </h2>
-            <div :id="'collapse' + category.id" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#categoryAccordion">
-                <div class="accordion-body bg-transparent">
-                    <ul class="list-group list-group-flush">
-                        <!-- Category Feeds Here -->
-                        <!-- Example feed item -->
-                        <li class="list-group-item bg-transparent text-light">
-                            <i class="fas fa-rss me-2"></i> All Feeds
-                        </li>
-                        <!-- Feeds template -->
-                        <template x-for="feed in category.feeds" :key="feed.id">
-                            <li class="list-group-item bg-transparent text-light">
-                                <i class="fas fa-rss me-2"></i>
-                                <span x-text="feed.name"></span>
-                                <i class="fas fa-times float-end"></i>
-                            </li>
-                        </template>
-                    </ul>
+    <!-- Add Category Modal -->
+    <div class="modal" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCategoryModalLabel">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Form for adding category -->
+                    <input type="text" id="newCategoryName" class="form-control" placeholder="Category Name">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="addCategory()">Done</button>
                 </div>
             </div>
         </div>
-    </template>
+    </div>
+
+    <!-- Add Feed Modal -->
+    <div class="modal" id="addFeedModal" tabindex="-1" aria-labelledby="addFeedModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addFeedModalLabel">Add Feed</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Form for adding feed manually -->
+                    <input type="text" id="newFeedName" class="form-control mb-2" placeholder="Feed Name">
+                    <input type="url" id="newFeedUrl" class="form-control mb-2" placeholder="Feed URL">
+                    <textarea id="newFeedDescription" class="form-control mb-2" placeholder="Feed Description"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="importOPML(selectedCategory)">Import OPML</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="addFeed(selectedCategory, document.getElementById('newFeedName').value, document.getElementById('newFeedUrl').value, document.getElementById('newFeedDescription').value)">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

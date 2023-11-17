@@ -11,6 +11,7 @@ fi
 
 # Parse command line arguments
 FORCE_INSTALL=false
+FORCE_PSQL_SETUP=false
 USE_SSL=false
 HEADLESS=false
 
@@ -21,16 +22,18 @@ LAST_INSTALLED=$(cat .last_installed 2>/dev/null)
 
 while [ "$1" != "" ]; do
     case $1 in
-        -f | --force )    FORCE_INSTALL=true
-                          ;;
-        -s | --ssl )      USE_SSL=true
-                          ;;
-        --headless )      HEADLESS=true
-                          ;;
-        -n | --ngrok )    NGROK=true
-                          ;;
-        -d | --dry-run )  DRYRUN=true
-                          ;;
+        -f | --force )          FORCE_INSTALL=true
+                                ;;
+        -fp | --force-psql )    FORCE_PSQL_SETUP=true
+                                ;;
+        -s | --ssl )            USE_SSL=true
+                                ;;
+        --headless )            HEADLESS=true
+                                ;;
+        -n | --ngrok )          NGROK=true
+                                ;;
+        -d | --dry-run )        DRYRUN=true
+                                ;;
     esac
     shift
 done
@@ -121,6 +124,7 @@ install_python () {
           exit 1
           ;;
       esac
+      FORCE_PSQL_SETUP=true
     else
       echo "Distro not recognized. Please install python3, python3-pip and python3-venv manually."
       exit 1
@@ -192,23 +196,27 @@ if ! env_variable_exists "DB_USER" || ! env_variable_exists "DB_PASS" || ! env_v
     set_env_variable "DB_NAME" "Enter your database name" "" "nexafeed"
     echo
 
-    source .env
-    install_postgresql
-
-    if ! command_exists postgresql-setup; then
-        sudo postgresql-setup --initdb
-    fi
-    sudo systemctl enable --now postgresql.service
-
-    # Configure PostgreSQL with environment variables
-    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${DB_PASS}';" 2>/dev/null
-    sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};" 2>/dev/null
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" 2>/dev/null
-
-    echo "PostgreSQL has been installed and configured."
-    echo "The default PostgreSQL user 'postgres' has been modified and set with the provided password."
-    echo "Please use these credentials to connect to the PostgreSQL database if you need."
+    FORCE_PSQL_SETUP=true
   fi
+fi
+
+if [ "$FORCE_PSQL_SETUP" = true ]; then
+  source .env
+  install_postgresql
+
+  if command_exists postgresql-setup; then
+    sudo postgresql-setup --initdb
+  fi
+  sudo systemctl enable --now postgresql.service
+
+  # Configure PostgreSQL with environment variables
+  sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '${DB_PASS}';" 2>/dev/null
+  sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};" 2>/dev/null
+  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};" 2>/dev/null
+
+  echo "PostgreSQL has been installed and configured."
+  echo "The default PostgreSQL user 'postgres' has been modified and set with the provided password."
+  echo "Please use these credentials to connect to the PostgreSQL database if you need."
 fi
 
 # Activate virtual environment if it exists, else create one

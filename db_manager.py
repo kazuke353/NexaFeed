@@ -2,24 +2,24 @@ import os
 import json
 import asyncio
 import asyncpg
-from datetime import timezone
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from dotenv import load_dotenv
 
-load_dotenv()
+class DBManager:
+    def __init__(self, dsn=None):
+        self.pool = None
+        self.dsn = dsn
 
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-async def drop_table(table_name=None):
-    async with asyncpg.create_pool(DATABASE_URL) as pool:
+    async def get_pool(self, dsn=None):
+        if self.pool is None:
+            self.pool = await asyncpg.create_pool(
+                dsn=dsn or self.dsn,
+                min_size=1,
+                max_size=100
+            )
+        return self.pool
+    
+    async def drop_table(self, table_name=None):
+        pool = await self.get_pool()
         async with pool.acquire() as conn:
             async with conn.transaction():
                 if table_name:  # If a specific table name is provided
@@ -28,20 +28,20 @@ async def drop_table(table_name=None):
                     """)
                 else:  # If no table name is provided, drop all tables listed
                     await conn.execute("""
-                                       DROP TABLE IF EXISTS feed_entries;
-                                       """)
+                                    DROP TABLE IF EXISTS feed_entries;
+                                    """)
                     await conn.execute("""
-                                       DROP TABLE IF EXISTS feed_metadata;
-                                       """)
+                                    DROP TABLE IF EXISTS feed_metadata;
+                                    """)
                     await conn.execute("""
-                                       DROP TABLE IF EXISTS feeds;
-                                       """)
+                                    DROP TABLE IF EXISTS feeds;
+                                    """)
                     await conn.execute("""
-                                       DROP TABLE IF EXISTS categories;
-                                       """)
+                                    DROP TABLE IF EXISTS categories;
+                                    """)
 
-async def create_tables():
-    async with asyncpg.create_pool(DATABASE_URL) as pool:
+    async def create_tables(self):
+        pool = await self.get_pool()
         async with pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
@@ -88,59 +88,19 @@ async def create_tables():
                     );
                 """)
 
-async def drop_columns_from_table(pool, table_name, columns_to_drop):
-    # Create a single query to drop multiple columns
-    alter_statements = ', '.join([f'DROP COLUMN IF EXISTS {column}' for column in columns_to_drop])
-    drop_columns_query = f'ALTER TABLE {table_name} {alter_statements};'
-    
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            try:
-                await conn.execute(drop_columns_query)
-                print(f"Columns {columns_to_drop} have been dropped from {table_name}")
-            except Exception as e:
-                print(f"An error occurred: {e}")
-
-Base = declarative_base()
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False)
-
-class DBManager:
-    def __init__(self):
-        self.engine = None
-        self.session = None
-        self.pool = None
-    
-    async def get_engine(self):
-        return create_engine(DATABASE_URL)
-
-    async def get_pool(self):
-        if self.pool is None:
-            self.pool = await asyncpg.create_pool(
-                dsn=DATABASE_URL,
-                min_size=1,
-                max_size=100
-            )
-        return self.pool
-
-    async def get_session(self):
-        if self.session is None:
-            engine = await self.get_pool()
-            self.session = SessionLocal(bind=engine)
-        return self.session
-
-    async def commit_session(self):
-        if self.session is not None:
-            await self.session.commit()
-
-    async def release_pool(self, connection):
-        await connection.release()
-
-    async def close_session(self):
-        if self.session is not None:
-            await self.session.close()
-            await self.engine.close()
-            await self.engine.wait_closed()
+    async def drop_columns_from_table(self, table_name, columns_to_drop):
+        # Create a single query to drop multiple columns
+        alter_statements = ', '.join([f'DROP COLUMN IF EXISTS {column}' for column in columns_to_drop])
+        drop_columns_query = f'ALTER TABLE {table_name} {alter_statements};'
+        
+        pool = await self.get_pool()
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                try:
+                    await conn.execute(drop_columns_query)
+                    print(f"Columns {columns_to_drop} have been dropped from {table_name}")
+                except Exception as e:
+                    print(f"An error occurred: {e}")
 
     async def select_data(self, table_name, query=None, params=None):
         pool = await self.get_pool()
@@ -288,53 +248,3 @@ class QueryBuilder:
 
         # Join the query parts and return
         return " ".join(filter(None, query_parts)).strip(), self.params
-
-async def setup_postgresql():
-    try:
-        # Create a connection pool
-        pool = await asyncpg.create_pool(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASS,
-            database=DB_NAME
-        )
-        
-        async with pool.acquire() as conn:
-            # Check if the user exists
-            user_exists = await conn.fetchrow(f"SELECT 1 FROM pg_roles WHERE rolname='{DB_USER}'")
-            
-            # Create the user if it doesn't exist
-            if not user_exists:
-                await conn.execute(f"CREATE USER {DB_USER} WITH PASSWORD '{DB_PASS}'")
-                print(f"User '{DB_USER}' created.")
-
-            # Check if the database exists
-            db_exists = await conn.fetchrow(f"SELECT 1 FROM pg_database WHERE datname='{DB_NAME}'")
-            
-            # Create the database if it doesn't exist
-            if not db_exists:
-                await conn.execute(f"CREATE DATABASE {DB_NAME} OWNER {DB_USER}")
-                print(f"Database '{DB_NAME}' created.")
-
-        #await drop_table()
-        #await drop_table("feeds")
-        #await drop_table("categories")
-        await create_tables()
-        #await drop_columns_from_table(pool, "feed_entries", ['etag'])
-
-        async with pool.acquire() as conn:
-            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
-            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_published_date ON feed_entries(published_date DESC, id DESC);")
-            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'creator') gin_trgm_ops);")
-
-        print("PostgreSQL setup completed.")
-
-    except asyncpg.exceptions.PostgresError as e:
-        print(f"PostgreSQL connection failed: {e}")
-
-# Check if PostgreSQL connection is successful and perform setup
-async def run_setup():
-    await setup_postgresql()
-
-asyncio.run(run_setup())

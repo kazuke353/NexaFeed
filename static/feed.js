@@ -58,7 +58,11 @@ document.addEventListener('alpine:init', () => {
                         console.log("Data:", data);
                         console.log("Feed Items:", data.feed_items);
 
-                        if ((!data || !data.feed_items) && !isInit) {
+                        if (
+                            (!data || !data.feed_items) &&
+                            !isInit &&
+                            (!(category in this.feedCache) || (category in this.feedCache && this.feedCache[category].length == 0))
+                        ) {
                             console.log("Fetching feeds again");
                             this.paginateFetchedFeed(category, true);
                         } else {
@@ -71,7 +75,6 @@ document.addEventListener('alpine:init', () => {
                         );
                     }
                 }
-                handleResize();
             } catch (error) {
                 console.error(`Error fetching feeds for ${category}:`, error);
             } finally {
@@ -157,9 +160,7 @@ document.addEventListener('alpine:init', () => {
                     if (data && data.feed_items) {
                         const newContentExists = this.checkForNewContent(data.feed_items);
                 
-                        if (newContentExists && !this.feedCache[Alpine.store("sharedState").getCurrentCategory()]) {
-                            this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), true, data);
-                        } else if (newContentExists) {
+                        if (newContentExists) {
                             this.showNotification();
                             this.fetchedFeed = data.feed_items;
                         }
@@ -174,7 +175,7 @@ document.addEventListener('alpine:init', () => {
                 setTimeout(checkForUpdates, 120000);
             };
 
-            checkForUpdates();
+            setTimeout(checkForUpdates, 120000);
         },
 
         checkForNewContent: function (fetchedEntries) {

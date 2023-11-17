@@ -176,12 +176,12 @@ class RSSFetcher:
     
     async def get_feed(self, category, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.3):
         print(f"Fetching feed with limit {limit}")
+        last_pd = self.parse_date(last_pd)
         query_builder = QueryBuilder()
         query_builder.where("category_id = %s", int(category))
 
         if last_id is not None and last_pd is not None:
-            query_builder.where("published_date < %s", self.parse_date(last_pd))
-            query_builder.where("id < %s", int(last_id))
+            query_builder.where("(published_date < %s OR (published_date = %s AND id < %s))", last_pd, last_pd, int(last_id))
 
         if search_query:
             # Validate and sanitize search_query here to avoid sql injection or other exploits

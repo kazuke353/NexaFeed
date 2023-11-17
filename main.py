@@ -19,7 +19,7 @@ load_dotenv()
 recent_requests = {}
 
 app = Quart(__name__)
-db_manager = DBManager()
+db_manager = None
 config_manager = ConfigManager()
 cache = Cache(config_manager).get()
 feed = Feed(db_manager, config_manager)
@@ -189,6 +189,10 @@ async def import_opml(category_id):
 @app.before_serving
 async def startup():
     try:
+        await setup_postgresql()
+    except Exception as e:
+        print(f"Error during PostgreSQL startup: {e}")
+    try:
         app_port = config_manager.get("app.port", 5000)
         ngrok_token = os.environ.get('NGROK_TOKEN')
         public_url = None
@@ -200,7 +204,7 @@ async def startup():
         if public_url:
             print(' * Public URL:', public_url)
     except Exception as e:
-        print(f"Error during startup: {e}")
+        print(f"Error during ngrok startup: {e}")
 
 @app.after_serving
 async def cleanup():
@@ -209,6 +213,48 @@ async def cleanup():
 
     if hasattr(app, 'ngrok_manager'):
         app.ngrok_manager.terminate_ngrok()
+
+async def setup_postgresql():
+    try:
+        DB_USER = os.getenv("DB_USER")
+        DB_PASS = os.getenv("DB_PASS")
+        DB_HOST = os.getenv("DB_HOST")
+        DB_PORT = os.getenv("DB_PORT")
+        DB_NAME = os.getenv("DB_NAME")
+        
+        db_manager = DBManager(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+        async with pool.acquire() as conn:
+            # Check if the user exists
+            user_exists = await conn.fetchrow(f"SELECT 1 FROM pg_roles WHERE rolname='{DB_USER}'")
+            
+            # Create the user if it doesn't exist
+            if not user_exists:
+                await conn.execute(f"CREATE USER {DB_USER} WITH PASSWORD '{DB_PASS}'")
+                print(f"User '{DB_USER}' created.")
+
+            # Check if the database exists
+            db_exists = await conn.fetchrow(f"SELECT 1 FROM pg_database WHERE datname='{DB_NAME}'")
+            
+            # Create the database if it doesn't exist
+            if not db_exists:
+                await conn.execute(f"CREATE DATABASE {DB_NAME} OWNER {DB_USER}")
+                print(f"Database '{DB_NAME}' created.")
+
+        #await db_manager.drop_table()
+        #await db_manager.drop_table("feeds")
+        #await db_manager.drop_table("categories")
+        await db_manager.create_tables()
+        #await db_manager.drop_columns_from_table(pool, "feed_entries", ['etag'])
+
+        async with pool.acquire() as conn:
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_combined ON feed_entries(category_id, published_date DESC, id DESC);")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'creator') gin_trgm_ops);")
+
+        print("PostgreSQL setup completed.")
+
+    except asyncpg.exceptions.PostgresError as e:
+        print(f"PostgreSQL connection failed: {e}")
 
 if __name__ == "__main__":
     config_manager.reload_config()

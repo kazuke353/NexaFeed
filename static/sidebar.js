@@ -1,6 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('sidebarManager', () => ({
         open: false,
+        selectedCategory: null,
         // Fetch the feeds for a given category
         fetchFeeds: async function (category) {
             // Check if feeds are already fetched
@@ -28,8 +29,9 @@ document.addEventListener('alpine:init', () => {
         },        
 
         addCategory: async function () {
-            // Show an input field to enter the category name
-            const categoryName = prompt("Enter the category name:");
+            const modalEl = document.getElementById('newCategoryName')
+            const categoryName = modalEl.value;
+            console.log("NIGGER: ", modalEl, categoryName)
             if (categoryName) {
                 // Add the new category to the list
                 await fetch("/api/categories", {
