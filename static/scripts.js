@@ -447,6 +447,11 @@ function handleResize() {
   adjustCardSizesAndTruncateText(cardsPerRow, rowsInView);
 }
 
+function toggleSidebar() {
+  var sidebar = document.querySelector('.sidebar-collapse');
+  sidebar.classList.toggle('active');
+}
+
 //document.addEventListener("DOMContentLoaded", () => handleResize());
 //window.addEventListener("load", () => handleResize());
 //window.addEventListener("resize", () => handleResize());

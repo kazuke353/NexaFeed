@@ -10,7 +10,8 @@ class Feed:
         self.urls = {}
     
     async def get_categories(self):
-        categories = await self.db_manager.select_data("categories")
+        pool = await self.db_manager.get_pool()
+        categories = await self.db_manager.select_data(pool, "categories")
         return categories
 
     async def get_feeds(self, category):
@@ -20,9 +21,11 @@ class Feed:
 
         # Adding basic conditions
         query_builder.where("category_id = %s", int(category))
+        query_builder.orderBy("name ASC")
         # Final Query
         query, params = query_builder.build()
-        feeds = await self.db_manager.select_data("feeds", query, params)
+        pool = await self.db_manager.get_pool()
+        feeds = await self.db_manager.select_data(pool, "feeds", query, params)
         if feeds:
             self.urls[category] = [feed['url'] for feed in feeds]
         return feeds
@@ -33,8 +36,12 @@ class Feed:
         await self.db_manager.insert_data(pool, "categories", data)
 
     async def remove_category(self, category_id):
-        condition = {"id": category_id}
-        await self.db_manager.delete_data("categories", condition)
+        condition_fd = {"category_id": category_id}
+        condition_cg = {"id": category_id}
+        pool = await self.db_manager.get_pool()
+        await self.db_manager.delete_data(pool, "feeds", condition_fd)
+        await self.db_manager.delete_data(pool, "feed_entries", condition_fd)
+        await self.db_manager.delete_data(pool, "categories", condition_cg)
 
     async def add_feed(self, category_id, feed_url):
         pool = await self.db_manager.get_pool()
@@ -42,14 +49,16 @@ class Feed:
         await self.db_manager.insert_data(pool, "feeds", data)
 
     async def remove_feed(self, feed_id):
+        pool = await self.db_manager.get_pool()
         condition = {"id": feed_id}
-        await self.db_manager.delete_data("feeds", condition)
+        await self.db_manager.delete_data(pool, "feeds", condition)
     
     async def remove_feeds_by_category(self, category_id):
         condition = {"category_id": category_id}
-        await self.db_manager.delete_data("feeds", condition)
+        pool = await self.db_manager.get_pool()
+        await self.db_manager.delete_data(pool, "feeds", condition)
     
-    async def init_fetch(self, category):
+    async def init_fetch(self, pool, category):
         start_time = time.time()
 
         if not self.rss_fetcher:
@@ -62,7 +71,6 @@ class Feed:
         if category not in self.urls:
             return False
 
-        pool = await self.db_manager.get_pool()
         try:
             failed_urls, rate_limited_urls = await self.rss_fetcher.fetch_feeds(category, self.urls[category], pool)
         except ValueError:
@@ -88,13 +96,14 @@ class Feed:
         if not self.rss_fetcher:
             self.rss_fetcher = RSSFetcher(self.db_manager)
 
+        pool = await self.db_manager.get_pool()
         if force_init:
             print(force_init, search_query)
-            response = await self.init_fetch(category)
+            response = await self.init_fetch(pool, category)
             if not response:
                 return []
 
-        feed_items = await self.rss_fetcher.get_feed(category, limit, last_id, last_pd, search_query)
+        feed_items = await self.rss_fetcher.get_feed(pool, category, limit, last_id, last_pd, search_query)
 
         fetch_duration = time.time() - start_time
         print(f"Fetched in {fetch_duration:.2f} seconds")

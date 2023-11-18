@@ -1,5 +1,5 @@
 import asyncio
-import json
+import re
 import pytz
 import tldextract
 import traceback
@@ -12,6 +12,7 @@ from user_agent import generate_user_agent
 from media_fetcher import fetch_media
 from db_manager import QueryBuilder
 import logging
+import yake
 
 logging.basicConfig(level=logging.INFO)
 
@@ -50,6 +51,46 @@ def select_title(feed_title, creator, website_name):
 
 def is_close(str1, str2, threshold=80):  # Note: threshold is 0-100
     return fuzz.ratio(str1.lower(), str2.lower()) > threshold
+
+# Compile the regular expression for performance
+CLEAN_TEXT_PATTERN = re.compile(r'<[^<]+?>|http\S+|[^A-Za-z ]+')
+def clean_text(text):
+    """
+    Clean the input text by removing HTML tags, URLs, special characters, and numbers.
+
+    Args:
+    text (str): The text to be cleaned.
+
+    Returns:
+    str: The cleaned text.
+    """
+    return CLEAN_TEXT_PATTERN.sub('', text)
+
+def is_valid_tag(tag):
+    """
+    Check if the tag is valid by ensuring it's not a URL, not purely numerical, and within a certain length range.
+
+    Args:
+    tag (str): The tag to be validated.
+
+    Returns:
+    bool: True if the tag is valid, False otherwise.
+    """
+    return not (re.match(r'https?://\S+', tag) or re.fullmatch(r'\d+', tag) or len(tag) < 3 or len(tag) > 50)
+
+def extract_tags_from_entry(text, max_ngram_size=3, numOfKeywords=5, deduplication_threshold=0.9):
+    try:
+        language = "en"
+        yake_extractor = yake.KeywordExtractor(lan=language, n=max_ngram_size, dedupLim=deduplication_threshold, top=numOfKeywords, features=None)
+        yake_keywords = [kw for kw, _ in yake_extractor.extract_keywords(text)]
+
+        # Optionally, apply additional filtering for tags
+        tags = [tag for tag in yake_keywords if is_valid_tag(tag)]
+
+        return tags
+    except Exception as e:
+        print("An error occurred in extract_tags_from_entry:", e)
+        return []
 
 class RSSFetcher:
     BASE_QUERY = "SELECT * FROM feed_entries"
@@ -174,7 +215,7 @@ class RSSFetcher:
             print(f"Error parsing date '{date_str}': {e}")  # Debug print
             return None
     
-    async def get_feed(self, category, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.3):
+    async def get_feed(self, pool, category, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.25):
         print(f"Fetching feed with limit {limit}")
         last_pd = self.parse_date(last_pd)
         query_builder = QueryBuilder()
@@ -184,16 +225,17 @@ class RSSFetcher:
             query_builder.where("(published_date < %s OR (published_date = %s AND id < %s))", last_pd, last_pd, int(last_id))
 
         if search_query:
+            # TODO:
             # Validate and sanitize search_query here to avoid sql injection or other exploits
             # ...
 
-            search_condition = "((similarity(title, %s) > %s OR similarity(content, %s) > %s OR similarity(additional_info->>'creator', %s) > %s) OR url ILIKE %s)"
-            query_builder.where(search_condition, search_query, threshold, search_query, threshold, search_query, threshold, f"%{search_query}%")
+            search_condition = "((similarity(title, %s) > %s OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(additional_info->'tags') AS tag WHERE similarity(tag, %s) > %s ) OR similarity(additional_info->>'creator', %s) > %s) OR title ILIKE %s OR additional_info->>'creator' ILIKE %s OR url ILIKE %s)"
+            query_builder.where(search_condition, search_query, threshold, search_query, threshold, search_query, threshold, f"%{search_query}%", f"%{search_query}%", f"%{search_query}%")
 
         query_builder.orderBy("published_date DESC, id DESC").limit(int(limit))
         query, params = query_builder.build()
 
-        feeds = await self.db_manager.select_data("feed_entries", query, params)
+        feeds = await self.db_manager.select_data(pool, "feed_entries", query, params)
         return feeds
     
     async def process_entry(self, category, entry, url, feed_title_raw=None):
@@ -211,22 +253,26 @@ class RSSFetcher:
         # Fetch media information from entry
         tree, summary, thumbnail, video_id, additional_info = fetch_media(entry)
         
+        title = entry.get('title', '')
         # Use summary from content if available, fallback to the fetched summary, and limit to 100 characters
         summary = tree.text_content() if tree is not None else summary
-        content = entry.get('content', [{}])[0].get('value', summary)
+        content = str(entry.get('content', [{}])[0].get('value', summary))
 
         creator = additional_info.get('creator', '')
         website_name = get_website_name(url)
 
         additional_info['web_name'] = select_title(feed_title_raw, creator, website_name)
 
+        tags = extract_tags_from_entry(clean_text(title + ' ' + content))
+        if tags:
+            additional_info['tags'] = additional_info.get('tags', []) + tags
+
         # Build the processed entry dict
         processed_entry = {
             'url': url,
             'category_id': category,
-            'title': entry.get('title', ''),
+            'title': title,
             'content': content,
-            'summary': summary,
             'thumbnail': thumbnail,
             'video_id': video_id,
             'additional_info': additional_info,
@@ -248,21 +294,22 @@ class RSSFetcher:
         return datetime.min.replace(tzinfo=timezone.utc)
 
     async def fetch_single_feed(self, category, url):
-        latest_entry, latest_date, latest_etag, latest_content_len = None, None, None, None
+        latest_entry, fm_latest_date, fm_latest_etag, fm_latest_expires, fm_latest_content_len, fm_lates_title = None, None, None, None, None, None
         if url in self.feed_metadata:
             latest_entry = self.feed_metadata[url]
-            latest_date = latest_entry.get("last_modified")
-            latest_etag = latest_entry.get("etag")
-            latest_expires = latest_entry.get("expires")
-            latest_content_len = latest_entry.get("content_length")
-            if not latest_date:
-                latest_date = self.date_now
+            fm_latest_date = latest_entry.get("last_modified")
+            fm_latest_etag = latest_entry.get("etag")
+            fm_latest_expires = latest_entry.get("expires")
+            fm_latest_content_len = latest_entry.get("content_length")
+            fm_lates_title = latest_entry.get("latest_title")
+            if not fm_latest_date:
+                fm_latest_date = self.date_now
 
         headers = {'User-Agent': generate_user_agent()}
-        if latest_etag:
-            headers["If-None-Match"] = latest_etag
-        if latest_date:
-            headers["If-Modified-Since"] = latest_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        if fm_latest_etag:
+            headers["If-None-Match"] = fm_latest_etag
+        if fm_latest_date:
+            headers["If-Modified-Since"] = fm_latest_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
     
         async with ClientSession(connector=TCPConnector(keepalive_timeout=10, ssl=False), headers=headers) as fetch_session:
             try:
@@ -276,12 +323,19 @@ class RSSFetcher:
                             return [], [], 304
 
                     text = await response.text()
-                    feed = feedparser.parse(text, etag=latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
+                    feed = feedparser.parse(text, etag=fm_latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
 
                     feed_status_code = getattr(feed, 'status', None)
                     if feed_status_code and feed_status_code != 200:
                         print(url, " returned status: ", feed_status_code)
                         return [], [], feed_status_code
+                    entries = feed.entries
+                    len_entries = len(entries)
+                    if not len_entries:
+                        return [], [], 304
+                    latest_title = entries[-1].get('title', '')
+                    if latest_title and fm_lates_title and str(latest_title) == str(fm_lates_title):
+                        return [], [], 304
 
                     feed_title_raw = feed.feed.get('title', None)
                     # Store the new ETag from the response for next request
@@ -289,7 +343,7 @@ class RSSFetcher:
 
                     # Process entries and collect published dates concurrently
                     processed_entries_and_dates = await asyncio.gather(
-                        *(self.process_entry(category, entry, url, feed_title_raw) for entry in feed.entries)
+                        *(self.process_entry(category, entry, url, feed_title_raw) for entry in entries)
                     )
 
                     processed_entries = []
@@ -301,15 +355,16 @@ class RSSFetcher:
                         processed_entries = [entry for entry in processed_entries if entry is not None]
 
                         # Calculate the latest date from the non-None published dates
-                        latest_date = max((date for date in published_dates if date), default=None)
+                        fm_latest_date = max((date for date in published_dates if date), default=None)
                 
                     metadata_update = {
                         'url': url,
                         'etag': new_etag,
-                        'content_length': len(feed.entries),
-                        'last_modified': latest_date or self.date_now,
+                        'content_length': len_entries,
+                        'last_modified': fm_latest_date or self.date_now,
                         'expires': self.parse_date(response.headers.get('Expires')) or self.date_now,
-                        'last_checked': self.date_now
+                        'last_checked': self.date_now,
+                        'latest_title': latest_title
                     }
                 
                 return processed_entries, metadata_update, 200

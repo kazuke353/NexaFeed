@@ -30,3 +30,10 @@ rapidfuzz
 
 # Configuration and environment management
 python-dotenv
+
+# NLP
+spacy
+scikit-learn
+pandas
+yake
+rake-nltk

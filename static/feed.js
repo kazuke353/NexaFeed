@@ -4,13 +4,31 @@ document.addEventListener('alpine:init', () => {
         feedUpdateTimer: null,
         lastId: null,
         lastPd: null,
+        fetching: false,
         loading: false,
         searchQuery: "",
         lastSearch: "",
 
+
+        shouldClearCache: function (isInit, feed) {
+            // Check if cache needs to be cleared based on search query changes
+            return isInit || feed ||
+                (this.lastSearch.length === 0 && this.searchQuery.length > 0) ||
+                (this.lastSearch && this.searchQuery.length === 0) ||
+                (this.searchQuery !== this.lastSearch);
+        },
+
         paginateFetchedFeed: async function (category, isInit = false, feed = null) {
+            if (this.fetching || this.loading)
+            {
+                console.log("Already fetching! Skipping this call...", this.fetching, this.loading)
+                return;
+            }
             this.loading = true;
             try {
+                if (this.shouldClearCache(isInit, feed)) {
+                    this.clearCacheAndFeeds();
+                }
                 if (feed) {
                     this.clearCacheAndFeeds();
                     const feed_items = feed;
@@ -19,18 +37,11 @@ document.addEventListener('alpine:init', () => {
                 } else {
                     let url = `/api/fetch/${category}`;
                     const queryParams = [];
-                    if (
-                        isInit ||
-                        (this.lastSearch &&
-                            (this.searchQuery.length == 0 ||
-                                this.searchQuery != this.lastSearch))
-                    ) {
-                        this.clearCacheAndFeeds();
-                    }
                     if (this.searchQuery.length > 0) {
                         queryParams.push(
                             `q=${encodeURIComponent(this.searchQuery)}`
                         );
+                        this.lastSearch = this.searchQuery
                     }
                     if (this.lastId) {
                         queryParams.push(
@@ -52,6 +63,7 @@ document.addEventListener('alpine:init', () => {
                     }
                     url += queryParams.join("&");
 
+                    this.lastSearch = this.searchQuery;
                     const response = await this.callFetch(url);
                     if (response.isJson) {
                         const data = response.data;
@@ -61,9 +73,11 @@ document.addEventListener('alpine:init', () => {
                         if (
                             (!data || !data.feed_items) &&
                             !isInit &&
-                            (!(category in this.feedCache) || (category in this.feedCache && this.feedCache[category].length == 0))
+                            (!(category in this.feedCache) || (category in this.feedCache && this.feedCache[category].length == 0)) &&
+                            this.lastSearch.length === 0
                         ) {
                             console.log("Fetching feeds again");
+                            this.loading = false;
                             this.paginateFetchedFeed(category, true);
                         } else {
                             this.updateUI(data.feed_items, category, isInit);
@@ -107,9 +121,7 @@ document.addEventListener('alpine:init', () => {
           if (feed_items && feed_items.length > 0) {
             // Assuming feed_items is an array and each item is an object
             const last_entry = feed_items[feed_items.length - 1];
-            const last_id = last_entry.id;
-            const last_pd = last_entry.published_date;
-            this.updateLastEntry(last_id, last_pd);
+            this.updateLastEntry(last_entry.id, last_entry.published_date);
           }
         },
 
@@ -120,8 +132,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         handleScroll: function () {
-            if (this.loading) return;
-        
             // Get the feed container element
             const feedContainer = document.getElementById("feed-container");
             if (!feedContainer) return;
@@ -130,10 +140,9 @@ document.addEventListener('alpine:init', () => {
             const { scrollTop, scrollHeight, clientHeight } = feedContainer;
         
             // Check if the bottom of the feed container is reached
-            const atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 300;
+            const atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 100;
         
             if (atBottom) {
-                this.loading = true;
                 this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory())
             }
         },
@@ -149,33 +158,38 @@ document.addEventListener('alpine:init', () => {
             this.stopFeedUpdates();
 
             const checkForUpdates = async () => {
-                const url = `/api/fetch/${Alpine.store("sharedState").getCurrentCategory()}?force_init=True`;
-                const response = await this.callFetch(url);
-
-                if (response.isJson) {
-                    const data = response.data;
-                    console.log("Data:", data);
-                    console.log("Feed Items:", data.feed_items);
-
-                    if (data && data.feed_items) {
-                        const newContentExists = this.checkForNewContent(data.feed_items);
-                
-                        if (newContentExists) {
-                            this.showNotification();
-                            this.fetchedFeed = data.feed_items;
-                        }
-                    }
+                let timer = 300000
+                if (this.fetching || this.loading) {
+                    timer = 60000
                 } else {
-                    console.error(
-                        "Response is not JSON:",
-                        response.data
-                    );
-                }
+                    const url = `/api/fetch/${Alpine.store("sharedState").getCurrentCategory()}?force_init=True`;
+                    const response = await this.callFetch(url);
 
-                setTimeout(checkForUpdates, 120000);
+                    if (response.isJson) {
+                        const data = response.data;
+                        console.log("Data:", data);
+                        console.log("Feed Items:", data.feed_items);
+
+                        if (data && data.feed_items) {
+                            const newContentExists = this.checkForNewContent(data.feed_items);
+                    
+                            if (newContentExists) {
+                                this.showNotification();
+                                this.fetchedFeed = data.feed_items;
+                            }
+                        }
+                    } else {
+                        console.error(
+                            "Response is not JSON:",
+                            response.data
+                        );
+                    }
+                } 
+
+                setTimeout(checkForUpdates, timer);
             };
 
-            setTimeout(checkForUpdates, 120000);
+            setTimeout(checkForUpdates, 600000);
         },
 
         checkForNewContent: function (fetchedEntries) {
@@ -208,15 +222,32 @@ document.addEventListener('alpine:init', () => {
             notification.classList.add("d-none");
         },
 
+        /**
+         * Fetches data from a URL and handles JSON and text responses.
+         * @param {string} url The URL to fetch data from.
+         * @returns {Promise<{data: any, isJson: boolean}>} An object containing the fetched data and its type.
+         */
         callFetch: async function (url) {
-            const response = await fetch(url);
-            if (response.headers.get("content-type").includes("application/json")) {
-                const data = await response.json();
-                return { data: data, isJson: true };
+            if (this.fetching) {
+                return { data: "Fetching in progress, please wait.", isJson: false };
             }
-            const textData = await response.text();
-            return { data: textData, isJson: false };
-        },        
+        
+            this.fetching = true;
+            let result = { data: null, isJson: false };
+        
+            try {
+                const response = await fetch(url);
+                const isJson = response.headers.get("content-type")?.includes("application/json");
+                const data = isJson ? await response.json() : await response.text();
+                result = { data, isJson };
+            } catch (error) {
+                console.error(`Error while fetching data from ${url}:`, error);
+                result = { data: `Error: ${error.message}`, isJson: false };
+            } finally {
+                this.fetching = false;
+                return result;
+            }
+        },
 
         initFeed: function (isInit = false) {
             this.waitForCurrentCategory(() => {
@@ -273,7 +304,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         openModal: function (item) {
-            console.log("SEX: ", item)
             item.open = true;
             this.toggleScroll(false);
             if (!item.contentFormatted) {

@@ -1,13 +1,11 @@
-import os
 import json
-import asyncio
 import asyncpg
 
 class DBManager:
     def __init__(self, dsn=None):
         self.pool = None
         self.dsn = dsn
-
+        self.exceptions = asyncpg.exceptions
 
     async def get_pool(self, dsn=None):
         if self.pool is None:
@@ -18,30 +16,18 @@ class DBManager:
             )
         return self.pool
     
-    async def drop_table(self, table_name=None):
-        pool = await self.get_pool()
+    async def drop_table(self, pool, table_name=None):
         async with pool.acquire() as conn:
             async with conn.transaction():
                 if table_name:  # If a specific table name is provided
-                    await conn.execute(f"""
-                        DROP TABLE IF EXISTS {table_name};
-                    """)
+                    await conn.execute(f"""DROP TABLE IF EXISTS {table_name};""")
                 else:  # If no table name is provided, drop all tables listed
-                    await conn.execute("""
-                                    DROP TABLE IF EXISTS feed_entries;
-                                    """)
-                    await conn.execute("""
-                                    DROP TABLE IF EXISTS feed_metadata;
-                                    """)
-                    await conn.execute("""
-                                    DROP TABLE IF EXISTS feeds;
-                                    """)
-                    await conn.execute("""
-                                    DROP TABLE IF EXISTS categories;
-                                    """)
+                    await conn.execute("""DROP TABLE IF EXISTS feed_entries;""")
+                    await conn.execute("""DROP TABLE IF EXISTS feed_metadata;""")
+                    await conn.execute("""DROP TABLE IF EXISTS feeds;""")
+                    await conn.execute("""DROP TABLE IF EXISTS categories;""")
 
-    async def create_tables(self):
-        pool = await self.get_pool()
+    async def create_tables(self, pool):
         async with pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("""
@@ -55,6 +41,7 @@ class DBManager:
                     CREATE TABLE IF NOT EXISTS feeds (
                         id SERIAL PRIMARY KEY,
                         name TEXT,
+                        description TEXT,
                         url TEXT,
                         category_id INTEGER REFERENCES categories(id)
                     )
@@ -68,7 +55,8 @@ class DBManager:
                         content_length BIGINT,
                         last_modified TIMESTAMP WITH TIME ZONE,
                         expires TIMESTAMP WITH TIME ZONE,
-                        last_checked TIMESTAMP WITH TIME ZONE DEFAULT now()
+                        last_checked TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                        latest_title TEXT
                     )
                 """)
 
@@ -79,7 +67,6 @@ class DBManager:
                         category_id INTEGER REFERENCES categories(id),
                         title TEXT,
                         content TEXT,
-                        summary TEXT,
                         thumbnail TEXT,
                         video_id TEXT,
                         additional_info JSONB,
@@ -88,12 +75,11 @@ class DBManager:
                     );
                 """)
 
-    async def drop_columns_from_table(self, table_name, columns_to_drop):
+    async def drop_columns_from_table(self, pool, table_name, columns_to_drop):
         # Create a single query to drop multiple columns
         alter_statements = ', '.join([f'DROP COLUMN IF EXISTS {column}' for column in columns_to_drop])
         drop_columns_query = f'ALTER TABLE {table_name} {alter_statements};'
         
-        pool = await self.get_pool()
         async with pool.acquire() as conn:
             async with conn.transaction():
                 try:
@@ -102,8 +88,7 @@ class DBManager:
                 except Exception as e:
                     print(f"An error occurred: {e}")
 
-    async def select_data(self, table_name, query=None, params=None):
-        pool = await self.get_pool()
+    async def select_data(self, pool, table_name, query=None, params=None):
         async with pool.acquire() as conn:
             async with conn.transaction():
                 # If a custom query is provided, use it directly
@@ -120,8 +105,7 @@ class DBManager:
                 record = await conn.fetchval(final_query, *params) if params else await conn.fetchval(final_query)
                 return json.loads(record) if record else None
 
-    async def delete_data(self, table_name, condition):
-        pool = await self.get_pool()
+    async def delete_data(self, pool, table_name, condition):
         async with pool.acquire() as conn:
             async with conn.transaction():
                 # Build the WHERE clause with the provided condition

@@ -19,10 +19,10 @@ load_dotenv()
 recent_requests = {}
 
 app = Quart(__name__)
-db_manager = None
 config_manager = ConfigManager()
 cache = Cache(config_manager).get()
-feed = Feed(db_manager, config_manager)
+app.feed = None
+app.db_manager = None
 
 # Dictionary to store request counts and timestamps
 clients = {}
@@ -83,8 +83,8 @@ async def paginate(category):
     search_query = request.args.get('q')
     force_init = request.args.get('force_init', False)
 
-    limit = config_manager.get("feed.size", 20)
-    paginated_feeds = await feed.get_feed_items(category, limit, last_id, last_pd, search_query, force_init)
+    limit = config_manager.get("app.feed.size", 20)
+    paginated_feeds = await app.feed.get_feed_items(category, limit, last_id, last_pd, search_query, force_init)
     return jsonify(feed_items=paginated_feeds)
 
 @app.route('/refresh', methods=['GET'])
@@ -109,12 +109,12 @@ async def render_sidebar():
 
 @app.route('/api/categories')
 async def get_categories():
-    categories = await feed.get_categories()
+    categories = await app.feed.get_categories()
     return jsonify(categories=categories)
 
 @app.route('/api/categories/feeds/<int:category_id>')
 async def get_feeds(category_id):
-    feeds = await feed.get_feeds(category_id)
+    feeds = await app.feed.get_feeds(category_id)
     return jsonify(feeds=feeds)
 
 @app.route('/api/categories', methods=['POST'])
@@ -122,15 +122,15 @@ async def add_category():
     data = await request.get_json()
     category_name = data.get('name')
     if category_name:
-        await feed.add_category(category_name)
+        await app.feed.add_category(category_name)
         return jsonify({"message": "Category added successfully"}), 200
     return jsonify({"error": "Category name is required"}), 400
 
 @app.route('/api/categories/<int:category_id>', methods=['DELETE'])
 async def remove_category(category_id):
     # First, remove all feeds associated with this category
-    await feed.remove_feeds_by_category(category_id)
-    await feed.remove_category(category_id)
+    await app.feed.remove_feeds_by_category(category_id)
+    await app.feed.remove_category(category_id)
     return jsonify({"message": "Category removed successfully"}), 200
 
 @app.route('/api/categories/feeds/<int:category_id>', methods=['POST'])
@@ -138,13 +138,13 @@ async def add_feed(category_id):
     data = await request.get_json()
     feed_url = data.get('url')
     if feed_url:
-        await feed.add_feed(category_id, feed_url)
+        await app.feed.add_feed(category_id, feed_url)
         return jsonify({"message": "Feed added successfully"}), 200
     return jsonify({"error": "Feed URL is required"}), 400
 
 @app.route('/api/categories/feeds/<int:feed_id>', methods=['DELETE'])
 async def remove_feed(feed_id):
-    await feed.remove_feed(feed_id)
+    await app.feed.remove_feed(feed_id)
     return jsonify({"message": "Feed removed successfully"}), 200
 
 @app.route('/api/categories/<int:category_id>/import', methods=['POST'])
@@ -172,9 +172,9 @@ async def import_opml(category_id):
             }
             feeds.append(feed)
 
-        pool = await db_manager.get_pool()
+        pool = await app.db_manager.get_pool()
         # Insert feeds into the database
-        await db_manager.insert_many(
+        await app.db_manager.insert_many(
             pool=pool,  # Database connection pool
             table_name='feeds',
             data_list=feeds,
@@ -205,24 +205,28 @@ async def startup():
             print(' * Public URL:', public_url)
     except Exception as e:
         print(f"Error during ngrok startup: {e}")
+    
+    config_manager.reload_config()
+    app.feed = Feed(app.db_manager, config_manager)
 
 @app.after_serving
 async def cleanup():
-    pool = await db_manager.get_pool()
+    pool = await app.db_manager.get_pool()
     await pool.close()
 
     if hasattr(app, 'ngrok_manager'):
         app.ngrok_manager.terminate_ngrok()
 
 async def setup_postgresql():
+    DB_USER = os.getenv("DB_USER")
+    DB_PASS = os.getenv("DB_PASS")
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
+
+    app.db_manager = DBManager(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
     try:
-        DB_USER = os.getenv("DB_USER")
-        DB_PASS = os.getenv("DB_PASS")
-        DB_HOST = os.getenv("DB_HOST")
-        DB_PORT = os.getenv("DB_PORT")
-        DB_NAME = os.getenv("DB_NAME")
-        
-        db_manager = DBManager(f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+        pool = await app.db_manager.get_pool()
         async with pool.acquire() as conn:
             # Check if the user exists
             user_exists = await conn.fetchrow(f"SELECT 1 FROM pg_roles WHERE rolname='{DB_USER}'")
@@ -240,24 +244,22 @@ async def setup_postgresql():
                 await conn.execute(f"CREATE DATABASE {DB_NAME} OWNER {DB_USER}")
                 print(f"Database '{DB_NAME}' created.")
 
-        #await db_manager.drop_table()
-        #await db_manager.drop_table("feeds")
-        #await db_manager.drop_table("categories")
-        await db_manager.create_tables()
-        #await db_manager.drop_columns_from_table(pool, "feed_entries", ['etag'])
+        #await app.db_manager.drop_table(pool)
+        #await app.db_manager.drop_table(pool, "feed_metadata")
+        #await app.db_manager.drop_table(pool, "feed_entries")
+        #await app.db_manager.drop_table(pool, "categories")
+        await app.db_manager.create_tables(pool)
+        #await app.db_manager.drop_columns_from_table(pool, "feed_entries", ['etag'])
 
         async with pool.acquire() as conn:
             await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
             await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_combined ON feed_entries(category_id, published_date DESC, id DESC);")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'tags') gin_trgm_ops);")
             await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'creator') gin_trgm_ops);")
-
-        print("PostgreSQL setup completed.")
-
-    except asyncpg.exceptions.PostgresError as e:
+    except app.db_manager.exceptions.PostgresError as e:
         print(f"PostgreSQL connection failed: {e}")
 
 if __name__ == "__main__":
-    config_manager.reload_config()
     app.run(
         host=config_manager.get("app.host", "0.0.0.0"),
         debug=config_manager.get("app.debug", False),

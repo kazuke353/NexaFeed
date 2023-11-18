@@ -1,22 +1,28 @@
-<div id="sidebar" class="border-right col-md-2 bg-dark p-3 opacity-75" x-data="sidebarManager()">
-    <div id="sidebar-container" class="vh-100 overflow-auto text-light">
-        <!-- Content for larger screens (non-collapsible sidebar) -->
+<div id="sidebar" x-data="sidebarManager()">
+    <div id="sidebar-container" class="vh-100 w-100 overflow-auto text-light border-right bg-dark opacity-75">
         <nav class="row justify-content-center mb-4">
-            <div class="col-12 col-lg-8">
-                <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light border-0">
-                        <i class="fas fa-search text-dark"></i>
-                    </span>
-                    <input 
-                        type="text" 
-                        id="search-box" 
-                        class="form-control bg-light text-dark border-0 shadow-sm rounded" 
-                        placeholder="Search..."
-                        aria-label="Search"
-                        x-on:input.debounce.500ms="search()"
-                    >
-                </div>
-            </div>
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-light border-0 rounded-left">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input 
+                    type="text" 
+                    id="search-box" 
+                    class="form-control bg-light text-dark border-0 shadow-sm" 
+                    placeholder="Search articles, news, etc..."
+                    aria-label="Search for articles, news, and more"
+                    x-on:input.debounce.500ms="search()"
+                >
+                <button 
+                    class="btn btn-light border-0" 
+                    type="button" 
+                    id="clearSearch" 
+                    x-show="searchQuery"
+                    @click="goBack();"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>                    
         </nav>
 
         <section class="d-flex flex-column align-items-center mb-4">
@@ -48,14 +54,14 @@
                         <div :id="'collapse' + category.id" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#categoryAccordion">
                             <div class="accordion-body bg-transparent">
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item bg-transparent text-light">
+                                    <li class="list-group-item bg-transparent text-light"  @click="goBack(category.id)">
                                         <i class="fas fa-rss me-2"></i> All Feeds
                                     </li>
                                     <template x-for="feed in category.feeds" :key="feed.id">
-                                        <li class="list-group-item bg-transparent text-light">
-                                            <i class="fas fa-rss me-2"></i>
-                                            <span x-text="feed.name"></span>
-                                            <i class="fas fa-times float-end"></i>
+                                        <li class="list-group-item bg-transparent text-light" @click="search(feed.url, category)">
+                                            <i class="fas fa-rss me-2" @click="search(feed.url, category)"></i>
+                                            <span x-text="feed.name" @click="search(feed.url, category)"></span>
+                                            <i class="fas fa-times float-end" @click="removeFeed(category, feed)"></i>
                                         </li>
                                     </template>
                                 </ul>
@@ -67,8 +73,8 @@
         </div>
     </div>
     <!-- Add Category Modal -->
-    <div class="modal" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="z-index: 2000; position: relative">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addCategoryModalLabel">Add Category</h5>
@@ -86,8 +92,8 @@
     </div>
 
     <!-- Add Feed Modal -->
-    <div class="modal" id="addFeedModal" tabindex="-1" aria-labelledby="addFeedModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="addFeedModal" tabindex="-1" aria-labelledby="addFeedModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="z-index: 2000; position: relative">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="addFeedModalLabel">Add Feed</h5>

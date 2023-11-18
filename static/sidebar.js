@@ -30,18 +30,19 @@ document.addEventListener('alpine:init', () => {
 
         addCategory: async function () {
             const modalEl = document.getElementById('newCategoryName')
-            const categoryName = modalEl.value;
-            console.log("NIGGER: ", modalEl, categoryName)
-            if (categoryName) {
-                // Add the new category to the list
-                await fetch("/api/categories", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ name: categoryName }),
-                });
-                Alpine.store("sharedState").initCategories();
+            if (modalEl) {
+                const categoryName = modalEl.value;
+                if (categoryName) {
+                    // Add the new category to the list
+                    await fetch("/api/categories", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ name: categoryName }),
+                    });
+                    Alpine.store("sharedState").initCategories();
+                }
             }
         },
 

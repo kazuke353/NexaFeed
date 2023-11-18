@@ -310,3 +310,37 @@ button:hover, a.nav-link:hover, a.dropdown-toggle:hover {
 .border-rounded {
     border-radius: var(--border-radius-base);
 }
+
+/* Adjustments for the toggle button */
+@media (max-width: 767.98px) {
+    /* Padding or margin to push content down */
+    #main-container {
+        padding-top: 60px; /* Adjust according to the size of your button */
+    }
+
+    #sidebar-container {
+        padding-top: 60px; /* Adjust according to the size of your button */
+    }
+
+    .btn-toggle-sidebar {
+        width: 40px; /* Adjust as needed */
+        height: 40px; /* Adjust as needed */
+    }
+
+    /* Improved Sidebar Style */
+    .sidebar-collapse {
+        width: 100%;
+        display: none; /* Hidden by default */
+        position: fixed; /* Fixed position */
+        z-index: 1050; /* Above other content */
+        top: 0;
+        left: 0;
+        height: 100vh - 60px; /* Full height */
+        overflow-y: auto; /* Scrollable if content is long */
+        background-color: #343a40; /* Sidebar background color */
+    }
+
+    .sidebar-collapse.active {
+        display: block; /* Shown when active */
+    }
+}

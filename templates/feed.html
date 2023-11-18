@@ -1,4 +1,4 @@
-<div class="col" id="feed-container" x-init="initFeed()">
+<div id="feed-container" x-init="initFeed()">
     <!-- Notification -->
     <div id="notification" class="alert alert-info d-none" role="alert">
         <i class="fas fa-bell"></i> New feeds available! Click to reset and load the new feeds.
@@ -19,7 +19,7 @@
                                 <small x-text="item.published_date"></small>
                             </div>
                             <hr class="card-separator" />
-                            <p class="card-text" x-text="item.summary"></p>
+                            <p class="card-text" x-text="item.content"></p>
                             <div class="mt-2">
                                 <template x-for="web_name in item.additional_info.web_name">
                                     <span class="badge bg-primary badge-pill" x-text="web_name"></span>
@@ -50,6 +50,10 @@
                     </div>
                 </div>
             </template>
+            <!-- Spinner -->
+            <div id="spinner" class="page-load-status d-flex justify-content-center align-items-center" style="display: none" role="status">
+                <div x-show="loading" class="spinner-border text-primary" role="status"></div>
+            </div>
         </div>
     </div>
 </div>

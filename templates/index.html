@@ -18,20 +18,25 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
     </head>
 
-    <body x-data="sharedData()" x-init="fetch()" class="bg-secondary text-white">
+    <body x-data="sharedData()" x-init="fetch()" class="w-100 bg-secondary text-white">
         <div class="container-fluid vh-100" id="main-container" x-data="feedManager()">
-                <div class="row" id="page">    
-                    <!-- Sidebar Include -->
+            <div class="row flex-nowrap" id="page">
+                <!-- Toggle Button -->
+                <button class="btn btn-primary d-md-none position-fixed top-0 start-0 m-2" @click="toggleSidebar()" style="z-index: 2001;">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Sidebar -->
+                <div class="col-12 col-md-3 col-xl-2 px-sm-2 px-0 d-md-block sidebar-collapse">
                     {% include 'sidebar.html' %}
-                    <!-- Main Content Area -->
+                </div>
+        
+                <!-- Main Content Area -->
+                <div class="col-12 col-md-9 col-xl-10 p-0">
                     {% include 'feed.html' %}
-                    <!-- Spinner -->
-                    <div id="spinner" class="page-load-status d-flex justify-content-center align-items-center" style="display: none" role="status">
-                        <div x-show="loading" class="spinner-border text-primary" role="status"></div>
-                    </div>
                 </div>
             </div>
-        </div>
+        </div>        
 
         <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
         <script src="{{ url_for('static', filename='scripts.js') }}"></script>
