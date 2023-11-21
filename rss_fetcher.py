@@ -135,6 +135,44 @@ class RSSFetcher:
         else:
             return None, None
 
+    def remove_old_entries(feed_xml, last_updated_date):
+        """
+        Remove entries from an RSS feed that are older than the last_updated_date.
+        Converts the feed XML string to a file-like object for efficient parsing.
+        Stops processing as soon as an old entry is encountered.
+
+        :param feed_xml: The raw XML of the feed.
+        :param last_updated_date: The datetime object representing the date of the last fetched entry.
+        :return: Modified XML as string with only new entries.
+        """
+        try:
+            with StringIO(feed_xml) as feed_xml_io:
+                context = etree.iterparse(feed_xml_io, tag='item')
+                root = None  # To keep track of the root element
+                for action, elem in context:
+                    if root is None:
+                        root = elem.getparent()
+                    pub_date = elem.find('pubDate')
+                    if pub_date is not None and pub_date.text:
+                        entry_date = parse_date(pub_date.text)
+                        if entry_date and entry_date <= last_updated_date:
+                            # Remove the element and stop iteration
+                        elem.getparent().remove(elem)
+                        break
+                elem.clear()
+
+            return etree.tostring(root, pretty_print=True, encoding='unicode') if root else feed_xml
+    except etree.XMLSyntaxError as e:
+        # Handle XML parsing errors
+        print(f"XML parsing error: {e}")
+        return feed_xml  # Return the original feed_xml in case of parsing error
+
+# Example usage
+last_updated_date_str = 'your_last_updated_date_here'  # Replace with your last updated date string
+last_updated_date = datetime.strptime(last_updated_date_str, '%Y-%m-%d %H:%M:%S')
+feed_xml = """<rss version="2.0">...your_feed_xml_here...</rss>"""  # Replace with your feed XML
+modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
+
     def check_content_update(self, stored_headers, response, last_checked):
         """
         Check if the content has been updated based on ETag, Last-Modified headers, and the last checked time.
