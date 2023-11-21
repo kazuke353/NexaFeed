@@ -80,8 +80,7 @@ def is_valid_tag(tag):
 
 def extract_tags_from_entry(text, max_ngram_size=3, numOfKeywords=5, deduplication_threshold=0.9):
     try:
-        language = "en"
-        yake_extractor = yake.KeywordExtractor(lan=language, n=max_ngram_size, dedupLim=deduplication_threshold, top=numOfKeywords, features=None)
+        yake_extractor = yake.KeywordExtractor(n=max_ngram_size, dedupLim=deduplication_threshold, top=numOfKeywords, features=None)
         yake_keywords = [kw for kw, _ in yake_extractor.extract_keywords(text)]
 
         # Optionally, apply additional filtering for tags
@@ -116,12 +115,33 @@ class RSSFetcher:
         self.clients[client_id] = request_info
         return request_info["count"] <= limit
     
-    def check_content_update(self, stored_headers, response):
+    def get_most_recent_entry(self, entries):
+        if not entries:
+            return None, None
+
+        first_entry = entries[0]
+        last_entry = entries[-1]
+
+        first_entry_date = self.get_published_date(first_entry)
+        last_entry_date = self.get_published_date(last_entry)
+
+        if first_entry_date and last_entry_date:
+            # Use parentheses to correctly group the return values
+            return (first_entry, first_entry_date) if first_entry_date >= last_entry_date else (last_entry, last_entry_date)
+        elif first_entry_date:
+            return first_entry, first_entry_date
+        elif last_entry_date:
+            return last_entry, last_entry_date
+        else:
+            return None, None
+
+    def check_content_update(self, stored_headers, response, last_checked):
         """
-        Check if the content has been updated based on ETag and Last-Modified headers.
+        Check if the content has been updated based on ETag, Last-Modified headers, and the last checked time.
 
         :param stored_headers: The headers dictionary containing previously stored 'Last-Modified' and 'ETag'.
         :param response: The response object from the HTTP request.
+        :param last_checked: The datetime object representing the last time the content was checked.
         :return: Boolean indicating whether the content has been updated.
         """
         # Extract current ETag and Last-Modified values from the response
@@ -139,8 +159,8 @@ class RSSFetcher:
         last_modified_updated = False
         if current_last_modified and stored_last_modified:
             try:
-                current_last_modified_dt = datetime.strptime(current_last_modified, "%a, %d %b %Y %H:%M:%S GMT")
-                stored_last_modified_dt = datetime.strptime(stored_last_modified, "%a, %d %b %Y %H:%M:%S GMT")
+                current_last_modified_dt = self.parse_date(current_last_modified)
+                stored_last_modified_dt = self.parse_date(stored_last_modified)
                 last_modified_updated = current_last_modified_dt > stored_last_modified_dt
             except ValueError as e:
                 # Log the error for debugging purposes
@@ -148,8 +168,18 @@ class RSSFetcher:
                 # If there is an error in parsing the dates, we can assume content update to be cautious.
                 last_modified_updated = True
 
-        # If either the ETag or Last-Modified header has changed, the content has been updated.
-        content_updated = etag_updated or last_modified_updated
+        # Check if the current_last_modified is more recent than last_checked
+        last_checked_updated = False
+        if current_last_modified and last_checked:
+            try:
+                current_last_modified_dt = self.parse_date(current_last_modified)
+                last_checked_updated = current_last_modified_dt > last_checked
+            except ValueError as e:
+                print(f"Error parsing current last modified date: {e}")
+                last_checked_updated = True
+
+        # If either the ETag or Last-Modified header has changed, or the content is newer than last checked, the content has been updated.
+        content_updated = etag_updated or last_modified_updated or last_checked_updated
 
         return content_updated
     
@@ -294,14 +324,15 @@ class RSSFetcher:
         return datetime.min.replace(tzinfo=timezone.utc)
 
     async def fetch_single_feed(self, category, url):
-        latest_entry, fm_latest_date, fm_latest_etag, fm_latest_expires, fm_latest_content_len, fm_lates_title = None, None, None, None, None, None
+        fm_latest_entry, fm_latest_date, fm_latest_etag, fm_latest_expires, fm_latest_content_len, fm_lates_title = None, None, None, None, None, None
         if url in self.feed_metadata:
-            latest_entry = self.feed_metadata[url]
-            fm_latest_date = latest_entry.get("last_modified")
-            fm_latest_etag = latest_entry.get("etag")
-            fm_latest_expires = latest_entry.get("expires")
-            fm_latest_content_len = latest_entry.get("content_length")
-            fm_lates_title = latest_entry.get("latest_title")
+            fm_latest_entry = self.feed_metadata[url]
+            fm_latest_date = fm_latest_entry.get("last_modified")
+            fm_latest_etag = fm_latest_entry.get("etag")
+            fm_latest_expires = fm_latest_entry.get("expires")
+            fm_latest_content_len = fm_latest_entry.get("content_length")
+            fm_last_checked = fm_latest_entry.get("last_checked")
+            fm_lates_title = fm_latest_entry.get("latest_title")
             if not fm_latest_date:
                 fm_latest_date = self.date_now
 
@@ -317,9 +348,9 @@ class RSSFetcher:
                     # Check for Internal Server Error
                     if response.status != 200:
                         return [], [], response.status
-                    if latest_entry:
+                    if fm_latest_entry:
                         # Check if the content has not changed
-                        if self.check_content_update(headers, response):
+                        if self.check_content_update(headers, response, fm_last_checked):
                             return [], [], 304
 
                     text = await response.text()
@@ -331,11 +362,19 @@ class RSSFetcher:
                         return [], [], feed_status_code
                     entries = feed.entries
                     len_entries = len(entries)
-                    if not len_entries:
+                    if not entries or not len_entries:
                         return [], [], 304
-                    latest_title = entries[-1].get('title', '')
-                    if latest_title and fm_lates_title and str(latest_title) == str(fm_lates_title):
-                        return [], [], 304
+                    latest_entry, latest_date = self.get_most_recent_entry(entries)
+                    if latest_entry:
+                        latest_title = latest_entry.get('title', '')
+                        if latest_title and fm_lates_title and str(latest_title) == str(fm_lates_title):
+                            return [], [], 304
+                        if latest_date and fm_latest_date and latest_date <= fm_latest_date:
+                            return [], [], 304
+                        if fm_latest_date:
+                            entries = [entry for entry in entries if self.get_published_date(entry) > fm_latest_date]
+                            if len_entries != len(entries):
+                                print(entries)
 
                     feed_title_raw = feed.feed.get('title', None)
                     # Store the new ETag from the response for next request
@@ -359,7 +398,7 @@ class RSSFetcher:
                 
                     metadata_update = {
                         'url': url,
-                        'etag': new_etag,
+                        'etag': new_etag or fm_latest_etag,
                         'content_length': len_entries,
                         'last_modified': fm_latest_date or self.date_now,
                         'expires': self.parse_date(response.headers.get('Expires')) or self.date_now,

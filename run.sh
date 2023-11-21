@@ -116,8 +116,10 @@ install_python () {
         centos)
           sudo yum install -y python3 python3-pip python3-virtualenv postgresql-server postgresql-contrib
           ;;
-        arch)
-          sudo pacman -Syu python python-pip python-virtualenv postgresql
+        arch|garuda)
+          sudo pacman -S python python-pip python-virtualenv postgresql
+          sudo -u postgres -i
+          initdb --locale en_US.UTF-8 -D '/var/lib/postgres/data'
           ;;
         *)
           echo "Distro not recognized. Please install python3, python3-pip and python3-venv manually."
@@ -148,8 +150,8 @@ install_postgresql () {
         centos)
           sudo yum install -y  postgresql-server postgresql-contrib
           ;;
-        arch)
-          sudo pacman -Syu postgresql
+        arch|garuda)
+          sudo pacman -S postgresql
           ;;
         *)
           echo "Distro not recognized. Please install postgresql manually."

@@ -8,6 +8,7 @@
                 <input 
                     type="text" 
                     id="search-box" 
+                    x-ref="searchBox"
                     class="form-control bg-light text-dark border-0 shadow-sm" 
                     placeholder="Search articles, news, etc..."
                     aria-label="Search for articles, news, and more"
@@ -18,7 +19,7 @@
                     type="button" 
                     id="clearSearch" 
                     x-show="searchQuery"
-                    @click="goBack();"
+                    @click.stop="goBack();"
                 >
                     <i class="fas fa-times"></i>
                 </button>
@@ -42,26 +43,26 @@
                 <template x-for="category in $store.sharedState.categories" :key="category.id">
                     <article class="accordion-item bg-transparent">
                         <h2 class="accordion-header d-flex justify-content-between align-items-center" :id="'heading' + category.id">
-                            <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + category.id" @click="fetchFeeds(category)" aria-expanded="false" :aria-controls="'collapse' + category.id">
+                            <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + category.id" @click.stop="fetchFeeds(category)" aria-expanded="false" :aria-controls="'collapse' + category.id">
                                 <i class="fas fa-chevron-down me-2"></i>
                                 <span x-text="category.name"></span>
                             </button>
                             <div>
-                                <i class="fas fa-plus me-2" @click="selectedCategory = category" data-bs-toggle="modal" data-bs-target="#addFeedModal"></i>
-                                <i class="fas fa-times" @click="removeCategory(category)"></i>
+                                <i class="fas fa-plus me-2" @click.stop="selectedCategory = category" data-bs-toggle="modal" data-bs-target="#addFeedModal"></i>
+                                <i class="fas fa-times" @click.stop="removeCategory(category)"></i>
                             </div>
                         </h2>
                         <div :id="'collapse' + category.id" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#categoryAccordion">
                             <div class="accordion-body bg-transparent">
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item bg-transparent text-light"  @click="goBack(category.id)">
+                                    <li class="list-group-item bg-transparent text-light"  @.stop="goBack(category.id)">
                                         <i class="fas fa-rss me-2"></i> All Feeds
                                     </li>
                                     <template x-for="feed in category.feeds" :key="feed.id">
-                                        <li class="list-group-item bg-transparent text-light" @click="search(feed.url, category)">
-                                            <i class="fas fa-rss me-2" @click="search(feed.url, category)"></i>
-                                            <span x-text="feed.name" @click="search(feed.url, category)"></span>
-                                            <i class="fas fa-times float-end" @click="removeFeed(category, feed)"></i>
+                                        <li class="list-group-item bg-transparent text-light" @click.stop="search(feed.url, category)">
+                                            <i class="fas fa-rss me-2" @click.stop="search(feed.url, category)"></i>
+                                            <span x-text="feed.name" @click.stop="search(feed.url, category)"></span>
+                                            <i class="fas fa-times float-end" @click.stop="removeFeed(category, feed)"></i>
                                         </li>
                                     </template>
                                 </ul>
@@ -85,7 +86,7 @@
                     <input type="text" id="newCategoryName" class="form-control" placeholder="Category Name">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="addCategory()">Done</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click.stop="addCategory()">Done</button>
                 </div>
             </div>
         </div>
@@ -106,8 +107,8 @@
                     <textarea id="newFeedDescription" class="form-control mb-2" placeholder="Feed Description"></textarea>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="importOPML(selectedCategory)">Import OPML</button>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="addFeed(selectedCategory, document.getElementById('newFeedName').value, document.getElementById('newFeedUrl').value, document.getElementById('newFeedDescription').value)">Done</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click.stop="importOPML(selectedCategory)">Import OPML</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click.stop="addFeed(selectedCategory, document.getElementById('newFeedName').value, document.getElementById('newFeedUrl').value, document.getElementById('newFeedDescription').value)">Done</button>
                 </div>
             </div>
         </div>

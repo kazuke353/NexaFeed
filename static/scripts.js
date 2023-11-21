@@ -1,3 +1,26 @@
+function openModal(item) {
+  item.open = true;
+  this.toggleScroll(false);
+  if (!item.contentFormatted) {
+      item.formattedContent = formatContent(item);
+      item.contentFormatted = true;
+  }
+}
+
+function closeModal(item) {
+  this.toggleScroll(true);
+  stopVideo();
+  item.open = false;
+}
+
+function toggleScroll(status) {
+  if (!status) {
+      document.body.classList.add("no-scroll");
+  } else {
+      document.body.classList.remove("no-scroll");
+  }
+}
+
 function formatContent(item) {
   let content = item.content;
   const originalLink = item.original_link;

@@ -1,12 +1,12 @@
 <div id="feed-container" x-init="initFeed()">
     <!-- Notification -->
-    <div id="notification" class="alert alert-info d-none" role="alert">
+    <div x-show="fetchedFeed.length > 0" id="notification" class="alert alert-info d-none" role="alert" @click.stop="paginateFetchedFeed($store.sharedState.getCurrentCategory(), true, fetchedFeed)">
         <i class="fas fa-bell"></i> New feeds available! Click to reset and load the new feeds.
     </div>
 
     <!-- Feed Container -->
     <div x-show="$store.sharedState != null && $store.sharedState.feed_items != null && $store.sharedState.feed_items.length > 0">
-        <div id="feed-container-inner" class="row feed-container bg-dark vh-100 overflow-auto" @scroll.debounce.500ms="handleScroll">
+        <div id="feed-container-inner" class="row feed-container bg-dark vh-100 overflow-auto" x-ref="feedContainer" @scroll.debounce.500ms="handleScroll">
             <template x-for="item in $store.sharedState.feed_items" :key="item.id">
                 <div class="col-12 col-md-6 col-lg-5 col-xl-3 d-flex pb-3"  @click.stop="openModal(item)">
                     <div class="feed-card card bg-dark text-light mb-3 shadow flex-fill feed-card" @click.stop="openModal(item)">
