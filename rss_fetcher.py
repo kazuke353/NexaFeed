@@ -392,7 +392,8 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
                             return [], [], 304
 
                     text = await response.text()
-                    feed = feedparser.parse(text, etag=fm_latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
+                    modified_feed_xml = remove_old_entries(text, fm_last_checked)
+                    feed = feedparser.parse(modified_feed_xml, etag=fm_latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
 
                     feed_status_code = getattr(feed, 'status', None)
                     if feed_status_code and feed_status_code != 200:
