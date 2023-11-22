@@ -55,7 +55,7 @@
                         <div :id="'collapse' + category.id" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#categoryAccordion">
                             <div class="accordion-body bg-transparent">
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item bg-transparent text-light"  @.stop="goBack(category.id)">
+                                    <li class="list-group-item bg-transparent text-light"  @click.stop="goBack(category.id)">
                                         <i class="fas fa-rss me-2"></i> All Feeds
                                     </li>
                                     <template x-for="feed in category.feeds" :key="feed.id">

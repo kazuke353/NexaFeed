@@ -253,6 +253,7 @@ async def setup_postgresql():
 
         async with pool.acquire() as conn:
             await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_metadata_url ON feed_metadata (url);")
             await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_combined ON feed_entries(category_id, published_date DESC, id DESC);")
             await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'tags') gin_trgm_ops);")
             await conn.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_creator ON feed_entries USING gin ((additional_info ->> 'creator') gin_trgm_ops);")

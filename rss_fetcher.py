@@ -13,6 +13,8 @@ from media_fetcher import fetch_media
 from db_manager import QueryBuilder
 import logging
 import yake
+from lxml import etree
+from io import BytesIO
 
 logging.basicConfig(level=logging.INFO)
 
@@ -95,174 +97,63 @@ class RSSFetcher:
     BASE_QUERY = "SELECT * FROM feed_entries"
     ORDER_AND_LIMIT = "ORDER BY published_date DESC, id DESC LIMIT $1::bigint"
 
-    def __init__(self, db_manager, max_workers=45):
+    def __init__(self, db_manager, max_workers=200):
+        self.feed_metadata = {}
         self.db_manager = db_manager
         self.max_workers = max_workers
-        self.session = None
-        self.clients = {}
-        self.date_attributes = ['published', 'pubDate', 'updated', 'published_date']
-    
-    def rate_limit(self, client_id, limit, time_window):
-        current_time = datetime.now()
-        request_info = self.clients.get(client_id, {"count": 0, "time": current_time})
+        self.namespaces = {
+            'dc': 'http://purl.org/dc/elements/1.1/'
+        }
+        self.date_attributes = ['pubDate', 'published', 'dc:date', 'date', 'published_date']
 
-        # Reset count if time_window has passed
-        if current_time - request_info["time"] > timedelta(seconds=time_window):
-            request_info = {"count": 1, "time": current_time}
-        else:
-            request_info["count"] += 1
+    def remove_old_entries(self, feed_xml, last_updated_date, url=""):
+        if not last_updated_date or not isinstance(last_updated_date, datetime):
+            print("Invalid last_updated_date")
+            return feed_xml, False
 
-        self.clients[client_id] = request_info
-        return request_info["count"] <= limit
-    
-    def get_most_recent_entry(self, entries):
-        if not entries:
-            return None, None
-
-        first_entry = entries[0]
-        last_entry = entries[-1]
-
-        first_entry_date = self.get_published_date(first_entry)
-        last_entry_date = self.get_published_date(last_entry)
-
-        if first_entry_date and last_entry_date:
-            # Use parentheses to correctly group the return values
-            return (first_entry, first_entry_date) if first_entry_date >= last_entry_date else (last_entry, last_entry_date)
-        elif first_entry_date:
-            return first_entry, first_entry_date
-        elif last_entry_date:
-            return last_entry, last_entry_date
-        else:
-            return None, None
-
-    def remove_old_entries(feed_xml, last_updated_date):
-        """
-        Remove entries from an RSS feed that are older than the last_updated_date.
-        Converts the feed XML string to a file-like object for efficient parsing.
-        Stops processing as soon as an old entry is encountered.
-
-        :param feed_xml: The raw XML of the feed.
-        :param last_updated_date: The datetime object representing the date of the last fetched entry.
-        :return: Modified XML as string with only new entries.
-        """
         try:
-            with StringIO(feed_xml) as feed_xml_io:
-                context = etree.iterparse(feed_xml_io, tag='item')
-                root = None  # To keep track of the root element
-                for action, elem in context:
-                    if root is None:
-                        root = elem.getparent()
-                    pub_date = elem.find('pubDate')
-                    if pub_date is not None and pub_date.text:
-                        entry_date = parse_date(pub_date.text)
-                        if entry_date and entry_date <= last_updated_date:
-                            # Remove the element and stop iteration
-                        elem.getparent().remove(elem)
-                        break
-                elem.clear()
+            feed_xml_bytes = feed_xml.encode('utf-8')
+            with BytesIO(feed_xml_bytes) as feed_xml_io:
+                tree = etree.parse(feed_xml_io)
+                root = tree.getroot()
+                root_of_interest = root[0] if len(root) > 0 else None
 
-            return etree.tostring(root, pretty_print=True, encoding='unicode') if root else feed_xml
-    except etree.XMLSyntaxError as e:
-        # Handle XML parsing errors
-        print(f"XML parsing error: {e}")
-        return feed_xml  # Return the original feed_xml in case of parsing error
+                if root_of_interest is None:
+                    print("No appropriate root element found in XML")
+                    return feed_xml, False
 
-# Example usage
-last_updated_date_str = 'your_last_updated_date_here'  # Replace with your last updated date string
-last_updated_date = datetime.strptime(last_updated_date_str, '%Y-%m-%d %H:%M:%S')
-feed_xml = """<rss version="2.0">...your_feed_xml_here...</rss>"""  # Replace with your feed XML
-modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
+                items_to_remove = [elem for elem in root_of_interest if elem.tag == 'item' and self.is_entry_old(elem, last_updated_date)]
+                new_entries_found = len(items_to_remove) < len(root_of_interest)
+                for item in items_to_remove:
+                    root_of_interest.remove(item)
 
-    def check_content_update(self, stored_headers, response, last_checked):
+                xml_string = etree.tostring(root_of_interest, pretty_print=True, encoding='unicode')
+                return xml_string, new_entries_found
+
+        except etree.XMLSyntaxError as e:
+            print(f"XML parsing error for {url}: {e}")
+            return feed_xml, False
+
+    def is_entry_old(self, elem, last_updated_date):
+        for attr in self.date_attributes:
+            xpath = self.create_xpath(attr)
+            date_str = elem.find(xpath)
+            if date_str is not None and date_str.text:
+                published_date = self.parse_date(date_str.text)
+                if published_date and published_date <= last_updated_date:
+                    return True
+        return False
+
+    def create_xpath(self, attr):
         """
-        Check if the content has been updated based on ETag, Last-Modified headers, and the last checked time.
+        Create an XPath query string based on the attribute.
 
-        :param stored_headers: The headers dictionary containing previously stored 'Last-Modified' and 'ETag'.
-        :param response: The response object from the HTTP request.
-        :param last_checked: The datetime object representing the last time the content was checked.
-        :return: Boolean indicating whether the content has been updated.
+        :param attr: The attribute to create an XPath query for.
+        :return: The XPath query string.
         """
-        # Extract current ETag and Last-Modified values from the response
-        current_last_modified = response.headers.get("Last-Modified")
-        current_etag = response.headers.get("ETag")
-
-        # Get the stored ETag and Last-Modified values (from previous response)
-        stored_last_modified = stored_headers.get("Last-Modified")
-        stored_etag = stored_headers.get("ETag")
-
-        # Compare ETags if both the current and stored ETags are present.
-        etag_updated = (current_etag is not None) and (current_etag != stored_etag)
-
-        # Compare Last-Modified dates if both are present and can be parsed.
-        last_modified_updated = False
-        if current_last_modified and stored_last_modified:
-            try:
-                current_last_modified_dt = self.parse_date(current_last_modified)
-                stored_last_modified_dt = self.parse_date(stored_last_modified)
-                last_modified_updated = current_last_modified_dt > stored_last_modified_dt
-            except ValueError as e:
-                # Log the error for debugging purposes
-                print(f"Error parsing dates: {e}")
-                # If there is an error in parsing the dates, we can assume content update to be cautious.
-                last_modified_updated = True
-
-        # Check if the current_last_modified is more recent than last_checked
-        last_checked_updated = False
-        if current_last_modified and last_checked:
-            try:
-                current_last_modified_dt = self.parse_date(current_last_modified)
-                last_checked_updated = current_last_modified_dt > last_checked
-            except ValueError as e:
-                print(f"Error parsing current last modified date: {e}")
-                last_checked_updated = True
-
-        # If either the ETag or Last-Modified header has changed, or the content is newer than last checked, the content has been updated.
-        content_updated = etag_updated or last_modified_updated or last_checked_updated
-
-        return content_updated
-    
-    def should_update(self, stored_expires, response):
-        """
-        Determine if the feed should be updated based on the 'Expires' header.
-
-        :param url: The URL of the feed.
-        :param response: The response object from the HTTP request.
-        :return: Boolean indicating whether the feed should be updated.
-        """
-        # Check if the 'Expires' header is present in the response
-        expires_header = response.headers.get('Expires')
-        if expires_header:
-            try:
-                # Parse the 'Expires' header to a datetime object
-                expires_time = datetime.strptime(expires_header, "%a, %d %b %Y %H:%M:%S GMT")
-                expires_time = pytz.utc.localize(expires_time)  # Localize to UTC
-                
-                # If the current time is before the expiration time, no update needed
-                if datetime.now(pytz.utc) < expires_time:
-                    return False
-                if stored_expires == expires_time:
-                    return False
-            except ValueError as e:
-                print(f"Error parsing 'Expires' header: {e}")
-
-        # If 'Expires' header is not present or the current time is past the expiration time, update needed
-        return True
-    
-    def check_content_length(self, stored_content_length, response):
-        """
-        Check for updates based on the Content-Length header.
-
-        :param stored_headers: The headers dictionary containing previously stored 'Content-Length'.
-        :param response: The response object from the HTTP request.
-        :return: Boolean indicating whether the content has been updated.
-        """
-        current_content_length = response.headers.get("Content-Length")
-
-        if stored_content_length and current_content_length:
-            return stored_content_length != current_content_length
-        else:
-            # If Content-Length is not available or not stored, cannot determine by this method.
-            return None
+        if 'dc:' in attr:
+            return './/{{{}}}{}'.format(self.namespaces['dc'], attr.split(':')[1])
+        return './/{}'.format(attr)
 
     def parse_date(self, date_str):
         # If date_str is already a datetime object, just ensure it's timezone-aware.
@@ -311,7 +202,7 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
         original_link = entry.get('link', '')
 
         # Initialize published_date
-        published_date = self.get_published_date(entry)
+        published_date = self.get_published_date(entry, url)
 
         # If there is no valid published date, log a warning and skip processing this entry
         if not published_date:
@@ -331,9 +222,9 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
 
         additional_info['web_name'] = select_title(feed_title_raw, creator, website_name)
 
-        tags = extract_tags_from_entry(clean_text(title + ' ' + content))
-        if tags:
-            additional_info['tags'] = additional_info.get('tags', []) + tags
+        #tags = extract_tags_from_entry(clean_text(title + ' ' + content))
+        #if tags:
+        #    additional_info['tags'] = additional_info.get('tags', []) + tags
 
         # Build the processed entry dict
         processed_entry = {
@@ -350,7 +241,7 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
 
         return processed_entry, published_date
 
-    def get_published_date(self, entry):
+    def get_published_date(self, entry, url):
         for attr in self.date_attributes:
             date_str = getattr(entry, attr, None)
             if date_str:
@@ -358,11 +249,11 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
                 if published_date:
                     return published_date
         
-        logging.warning("No valid published date found in entry.")
+        #logging.warning(f"No valid published date found in entry ({entry.get('title', '')}, {url})\n{entry}")
         return datetime.min.replace(tzinfo=timezone.utc)
 
     async def fetch_single_feed(self, category, url):
-        fm_latest_entry, fm_latest_date, fm_latest_etag, fm_latest_expires, fm_latest_content_len, fm_lates_title = None, None, None, None, None, None
+        fm_latest_entry, fm_latest_date, fm_latest_etag, fm_latest_expires, fm_latest_content_len, fm_last_checked, fm_latest_title = None, None, None, None, None, None, None
         if url in self.feed_metadata:
             fm_latest_entry = self.feed_metadata[url]
             fm_latest_date = fm_latest_entry.get("last_modified")
@@ -370,9 +261,9 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
             fm_latest_expires = fm_latest_entry.get("expires")
             fm_latest_content_len = fm_latest_entry.get("content_length")
             fm_last_checked = fm_latest_entry.get("last_checked")
-            fm_lates_title = fm_latest_entry.get("latest_title")
-            if not fm_latest_date:
-                fm_latest_date = self.date_now
+            fm_latest_title = fm_latest_entry.get("latest_title")
+            if not fm_latest_date and fm_last_checked:
+                fm_latest_date = fm_last_checked
 
         headers = {'User-Agent': generate_user_agent()}
         if fm_latest_etag:
@@ -380,20 +271,19 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
         if fm_latest_date:
             headers["If-Modified-Since"] = fm_latest_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
     
-        async with ClientSession(connector=TCPConnector(keepalive_timeout=10, ssl=False), headers=headers) as fetch_session:
+        async with ClientSession(connector=TCPConnector(limit=self.max_workers, keepalive_timeout=10, ssl=False), headers=headers) as fetch_session:
             try:
                 async with fetch_session.get(url) as response:
                     # Check for Internal Server Error
                     if response.status != 200:
                         return [], [], response.status
-                    if fm_latest_entry:
-                        # Check if the content has not changed
-                        if self.check_content_update(headers, response, fm_last_checked):
-                            return [], [], 304
-
                     text = await response.text()
-                    modified_feed_xml = remove_old_entries(text, fm_last_checked)
-                    feed = feedparser.parse(modified_feed_xml, etag=fm_latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
+                    should_parse = True
+                    if fm_latest_date:
+                        text, should_parse = self.remove_old_entries(text, self.parse_date(fm_latest_date), url)
+                    if not should_parse:
+                        return [], [], 304
+                    feed = feedparser.parse(text, etag=fm_latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
 
                     feed_status_code = getattr(feed, 'status', None)
                     if feed_status_code and feed_status_code != 200:
@@ -401,20 +291,10 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
                         return [], [], feed_status_code
                     entries = feed.entries
                     len_entries = len(entries)
-                    if not entries or not len_entries:
+                    if not entries or len_entries == 0:
                         return [], [], 304
-                    latest_entry, latest_date = self.get_most_recent_entry(entries)
-                    if latest_entry:
-                        latest_title = latest_entry.get('title', '')
-                        if latest_title and fm_lates_title and str(latest_title) == str(fm_lates_title):
-                            return [], [], 304
-                        if latest_date and fm_latest_date and latest_date <= fm_latest_date:
-                            return [], [], 304
-                        if fm_latest_date:
-                            entries = [entry for entry in entries if self.get_published_date(entry) > fm_latest_date]
-                            if len_entries != len(entries):
-                                print(entries)
-
+                    
+                    print(len_entries)
                     feed_title_raw = feed.feed.get('title', None)
                     # Store the new ETag from the response for next request
                     new_etag = response.headers.get("ETag")
@@ -442,7 +322,7 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
                         'last_modified': fm_latest_date or self.date_now,
                         'expires': self.parse_date(response.headers.get('Expires')) or self.date_now,
                         'last_checked': self.date_now,
-                        'latest_title': latest_title
+                        'latest_title': ""
                     }
                 
                 return processed_entries, metadata_update, 200
@@ -461,21 +341,22 @@ modified_feed_xml = remove_old_entries(feed_xml, last_updated_date)
         all_processed_entries = []  # Collect all processed entries here
         metadata_updates = []  # Collect metadata updates here
         self.date_now = self.parse_date(datetime.now(pytz.utc))
+        semaphore = asyncio.Semaphore(self.max_workers)
 
         async def fetch_and_process(url):
-            processed_entries, metadata_update, code = await self.fetch_single_feed(category, url)
-            if code != 200:
-                failed_urls.add(url)
-            else:
-                updated_urls.append(url)
-                all_processed_entries.extend(processed_entries)
-                if metadata_update:
-                    metadata_updates.append(metadata_update)
+            async with semaphore:
+                processed_entries, metadata_update, code = await self.fetch_single_feed(category, url)
+                if code != 200:
+                    failed_urls.add(url)
+                else:
+                    updated_urls.append(url)
+                    all_processed_entries.extend(processed_entries)
+                    if metadata_update:
+                        metadata_updates.append(metadata_update)
 
         async with pool.acquire() as connection:
-            conn = connection._con
             query = "SELECT * FROM feed_metadata WHERE url = ANY($1)"
-            feed_metadata_entries = await conn.fetch(query, urls)
+            feed_metadata_entries = await connection.fetch(query, urls)
             self.feed_metadata = {entry['url']: entry for entry in feed_metadata_entries}
 
         for url in urls:

@@ -62,34 +62,39 @@ document.addEventListener("alpine:init", () => {
                         console.error("Response is not JSON:", response.data);
                     }
                 }
-                this.updateUI(feed, category, isInit);
+                await this.updateUI(isInit, feed, category);
             } catch (error) {
                 console.error(`Error fetching feeds for ${category}:`, error);
             } finally {
                 this.loading = false;
+                this.fetchedFeed = {}
+                if (!this.feedCache[category] || this.feedCache.length == 0) {
+                    await this.initFetch(category);
+                    await this.paginateFetchedFeed(category, true, this.fetchedFeed);
+                }
             }
         },
 
-        updateUI: function (feedItems, category = null, isInit = false) {
+        updateUI: async function (isInit = false, feedItems = null, category = null) {
             category = category || Alpine.store("sharedState").getCurrentCategory();
 
             if (shouldClearCache(isInit, this.lastSearch, this.searchQuery)) {
+                console.log("CLEAR CACHE AND FEED")
                 this.feedCache[category] = [];
                 this.fetchedFeed = {}
                 this.updateLastEntry(null, null);
             }
+
             this.feedCache[category] = this.feedCache[category] || [];
-            if (feedItems) {
-                this.feedCache[category] = this.feedCache[category].concat(feedItems);
-            }
-
-            Alpine.store("sharedState").feed_items = this.feedCache[category];
-
             if (feedItems && feedItems.length > 0) {
+                this.feedCache[category] = this.feedCache[category].concat(feedItems);
                 const lastEntry = feedItems[feedItems.length - 1];
                 this.updateLastEntry(lastEntry.id, lastEntry.published_date);
             }
+
             this.lastSearch = this.searchQuery;
+            Alpine.store("sharedState").setCurrentCategory(category);
+            Alpine.store("sharedState").feed_items = this.feedCache[category];
         },
 
         updateLastEntry: function (newLastId, newLastPd) {
@@ -130,6 +135,30 @@ document.addEventListener("alpine:init", () => {
             }
         },
 
+        initFetch: async function (category) {
+            const url = `/api/fetch/${category}?force_init=True`;
+            const response = await this.callFetch(url);
+
+            if (response.isJson) {
+                const data = response.data;
+                console.log("Data:", data);
+                console.log("Feed Items:", data.feed_items);
+
+                if (data && data.feed_items) {
+                    const newContentExists = this.checkForNewContent(data.feed_items);
+
+                    if (newContentExists) {
+                        this.fetchedFeed = data.feed_items;
+                    }
+                }
+            } else {
+                console.error(
+                    "Response is not JSON:",
+                    response.data
+                );
+            }
+        },
+
         initFeed: function (isInit = false) {
             this.paginateFetchedFeed(Alpine.store("sharedState").getCurrentCategory(), isInit);
             this.startFeedUpdates();
@@ -147,7 +176,6 @@ document.addEventListener("alpine:init", () => {
         goBack: function (category_id = null) {
             this.searchQuery = "";
             this.$refs.searchBox.value = this.searchQuery;
-            this.updateUI(null, null, true);
             this.paginateFetchedFeed(category_id || Alpine.store("sharedState").getCurrentCategory());
         },
 
@@ -157,27 +185,7 @@ document.addEventListener("alpine:init", () => {
             const checkForUpdates = async () => {
                 let timer = this.fetching || this.loading ? 60000 : 300000;
 
-                const url = `/api/fetch/${Alpine.store("sharedState").getCurrentCategory()}?force_init=True`;
-                const response = await this.callFetch(url);
-
-                if (response.isJson) {
-                    const data = response.data;
-                    console.log("Data:", data);
-                    console.log("Feed Items:", data.feed_items);
-
-                    if (data && data.feed_items) {
-                        const newContentExists = this.checkForNewContent(data.feed_items);
-
-                        if (newContentExists) {
-                            this.fetchedFeed = data.feed_items;
-                        }
-                    }
-                } else {
-                    console.error(
-                        "Response is not JSON:",
-                        response.data
-                    );
-                }
+                await this.initFetch(Alpine.store("sharedState").getCurrentCategory());
 
                 setTimeout(checkForUpdates, timer);
             };
@@ -190,8 +198,14 @@ document.addEventListener("alpine:init", () => {
                 return false;
             }
 
-            const currentEntries = this.feedCache[Alpine.store("sharedState").getCurrentCategory()];
-            if (!currentEntries) {
+            const category_id = Alpine.store("sharedState").getCurrentCategory()
+            if (!(category_id in this.feedCache))
+            {
+                return false;
+            }
+            
+            const currentEntries = this.feedCache[category_id];
+            if (!currentEntries || currentEntries.length === 0) {
                 return true;
             }
 
