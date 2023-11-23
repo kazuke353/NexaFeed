@@ -97,7 +97,7 @@ class RSSFetcher:
     BASE_QUERY = "SELECT * FROM feed_entries"
     ORDER_AND_LIMIT = "ORDER BY published_date DESC, id DESC LIMIT $1::bigint"
 
-    def __init__(self, db_manager, max_workers=200):
+    def __init__(self, db_manager, max_workers=50):
         self.feed_metadata = {}
         self.db_manager = db_manager
         self.max_workers = max_workers
@@ -176,12 +176,15 @@ class RSSFetcher:
     
     async def get_feed(self, pool, category, limit=50, last_id=None, last_pd=None, search_query=None, threshold=0.25):
         print(f"Fetching feed with limit {limit}")
-        last_pd = self.parse_date(last_pd)
         query_builder = QueryBuilder()
         query_builder.where("category_id = %s", int(category))
 
         if last_id is not None and last_pd is not None:
+            last_pd = self.parse_date(str(last_pd))
             query_builder.where("(published_date < %s OR (published_date = %s AND id < %s))", last_pd, last_pd, int(last_id))
+        elif last_pd is not None:
+            last_pd = self.parse_date(str(last_pd))
+            query_builder.where("published_date < %s", last_pd)
 
         if search_query:
             # TODO:
@@ -252,7 +255,7 @@ class RSSFetcher:
         #logging.warning(f"No valid published date found in entry ({entry.get('title', '')}, {url})\n{entry}")
         return datetime.min.replace(tzinfo=timezone.utc)
 
-    async def fetch_single_feed(self, category, url):
+    async def fetch_single_feed(self, connector, category, url):
         fm_latest_entry, fm_latest_date, fm_latest_etag, fm_latest_expires, fm_latest_content_len, fm_last_checked, fm_latest_title = None, None, None, None, None, None, None
         if url in self.feed_metadata:
             fm_latest_entry = self.feed_metadata[url]
@@ -262,16 +265,15 @@ class RSSFetcher:
             fm_latest_content_len = fm_latest_entry.get("content_length")
             fm_last_checked = fm_latest_entry.get("last_checked")
             fm_latest_title = fm_latest_entry.get("latest_title")
-            if not fm_latest_date and fm_last_checked:
-                fm_latest_date = fm_last_checked
 
         headers = {'User-Agent': generate_user_agent()}
         if fm_latest_etag:
             headers["If-None-Match"] = fm_latest_etag
-        if fm_latest_date:
-            headers["If-Modified-Since"] = fm_latest_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        if fm_last_checked:
+            headers["If-Modified-Since"] = fm_last_checked.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            fm_last_checked = self.parse_date(fm_last_checked)
     
-        async with ClientSession(connector=TCPConnector(limit=self.max_workers, keepalive_timeout=10, ssl=False), headers=headers) as fetch_session:
+        async with ClientSession(connector=connector, headers=headers) as fetch_session:
             try:
                 async with fetch_session.get(url) as response:
                     # Check for Internal Server Error
@@ -279,8 +281,8 @@ class RSSFetcher:
                         return [], [], response.status
                     text = await response.text()
                     should_parse = True
-                    if fm_latest_date:
-                        text, should_parse = self.remove_old_entries(text, self.parse_date(fm_latest_date), url)
+                    if fm_last_checked:
+                        text, should_parse = self.remove_old_entries(text, fm_last_checked, url)
                     if not should_parse:
                         return [], [], 304
                     feed = feedparser.parse(text, etag=fm_latest_etag, modified=headers.get("If-Modified-Since"), request_headers=headers, response_headers=response.headers)
@@ -311,15 +313,11 @@ class RSSFetcher:
 
                         # Filter out None values if any entry failed to process
                         processed_entries = [entry for entry in processed_entries if entry is not None]
-
-                        # Calculate the latest date from the non-None published dates
-                        fm_latest_date = max((date for date in published_dates if date), default=None)
                 
                     metadata_update = {
                         'url': url,
                         'etag': new_etag or fm_latest_etag,
                         'content_length': len_entries,
-                        'last_modified': fm_latest_date or self.date_now,
                         'expires': self.parse_date(response.headers.get('Expires')) or self.date_now,
                         'last_checked': self.date_now,
                         'latest_title': ""
@@ -345,7 +343,8 @@ class RSSFetcher:
 
         async def fetch_and_process(url):
             async with semaphore:
-                processed_entries, metadata_update, code = await self.fetch_single_feed(category, url)
+                connector = TCPConnector(limit=self.max_workers*2, ssl=False)
+                processed_entries, metadata_update, code = await self.fetch_single_feed(connector, category, url)
                 if code != 200:
                     failed_urls.add(url)
                 else:
@@ -353,6 +352,8 @@ class RSSFetcher:
                     all_processed_entries.extend(processed_entries)
                     if metadata_update:
                         metadata_updates.append(metadata_update)
+                
+                await connector.close()
 
         async with pool.acquire() as connection:
             query = "SELECT * FROM feed_metadata WHERE url = ANY($1)"

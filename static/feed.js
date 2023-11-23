@@ -167,15 +167,21 @@ document.addEventListener("alpine:init", () => {
         search: function (query = null, category = null) {
             if (query) this.$refs.searchBox.value = query;
             this.searchQuery = this.$refs.searchBox.value.trim();
+            const startDate = this.$refs.startDate.value;
+            
             let categoryValue = category && category.id !== undefined ? category.id :
                 Alpine.store("sharedState").getCurrentCategory();
 
+            this.updateLastEntry(null, startDate);
             this.paginateFetchedFeed(categoryValue, false);
         },
 
         goBack: function (category_id = null) {
             this.searchQuery = "";
             this.$refs.searchBox.value = this.searchQuery;
+
+            const startDate = this.$refs.startDate.value;
+            this.updateLastEntry(null, startDate);
             this.paginateFetchedFeed(category_id || Alpine.store("sharedState").getCurrentCategory());
         },
 
